@@ -904,9 +904,9 @@ function openImport(){
       el("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"},
         el("a",{class:"chip",href:"https://accountscenter.instagram.com/info_and_permissions/dyi/",target:"_blank",rel:"noopener",text:"打開 Instagram 下載頁"}),
         el("a",{class:"chip",href:"https://accountscenter.facebook.com/info_and_permissions/dyi/",target:"_blank",rel:"noopener",text:"打開 Facebook 下載頁"})),
-      small("按「下載或轉移資訊」→ 選你的帳號 →「部分資訊」→ 只勾「已儲存的項目」（Instagram 在「你的 Instagram 動態」底下）→「下載到裝置」→ 日期選「所有時間」、格式選「JSON」→ 建立檔案。")));
+      small("按「下載或轉移資訊」→ 選你的帳號 →「匯出到裝置」。在「確認匯出」頁改四項：①「自訂資訊」只勾「已儲存」（Instagram 在「你的 Instagram 動態」底下），其他都取消 ②「日期範圍」選「所有時間」③「格式」選「JSON」（不能用 HTML）④「影像畫質」選「低」。最後按「開始匯出」。")));
     fb.append(step(2,"等 Meta 通知、把檔案存到手機",
-      small("通常幾分鐘到幾小時，Meta 會寄 email 或在同一頁顯示「可下載」。下載後是一個 .zip 檔，存在「檔案」App 裡就好，不用解壓縮。")));
+      small("通常幾分鐘到幾小時，Meta 會寄 email 通知，檔案只能在 4 天內下載。下載後是一個 .zip 檔，存在「檔案」App 裡就好，不用解壓縮。")));
     const fileIn=el("input",{type:"file",id:"impFile",accept:".zip,.json,application/zip,application/json",style:"position:absolute;opacity:0;width:1px;height:1px"});
     const pick=el("label",{class:"btn primary",for:"impFile",style:"display:block;margin-top:8px;cursor:pointer",text:"選擇下載好的檔案"});
     const fbStatus=el("div",{class:"count",style:"margin-top:6px"}); const fbList=el("div",{class:"list"});
@@ -1277,7 +1277,7 @@ importSection=function(v){
 };
 prune();
 
-const BUILD="20261029212528";
+const BUILD="20261029213044";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
