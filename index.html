@@ -115,7 +115,7 @@ button:focus-visible,.card:focus-visible,a:focus-visible{outline:2px solid var(-
 .preset button{display:flex;justify-content:space-between;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:14px;padding:10px 12px;border-radius:12px;cursor:pointer}
 .preset button span{color:var(--muted);font-size:12px}
 
-.titlerow{display:flex;align-items:center;justify-content:space-between}
+.titlerow h3{flex:1}.titlerow{gap:8px;display:flex;align-items:center;justify-content:space-between}
 .gear{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--sheet);color:var(--ink);display:grid;place-items:center;cursor:pointer}
 .gear svg{width:18px;height:18px}
 .segbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--line);border-radius:12px;padding:3px;margin-bottom:10px}
@@ -199,7 +199,7 @@ html,body{height:100%;margin:0}[hidden]{display:none!important}
       </button>
 
       <div class="top">
-        <div class="titlerow"><h3 id="title">附近</h3><button class="gear" id="gear" type="button" aria-label="設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
+        <div class="titlerow"><h3 id="title">附近</h3><button class="gear" id="addbtn" type="button" aria-label="加入收藏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button class="gear" id="gear" type="button" aria-label="設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
         <button class="locbtn" id="locbtn" type="button"><span class="pulse"></span><span>目前位置：<b id="locname"></b></span><small id="locmode">模擬 ▾</small></button>
       </div>
       <div class="body" id="view"></div>
@@ -663,6 +663,7 @@ function openSettings(){
   openSheet(s=>{ s.append(el("h4",{text:"設定"})); const box=el("div",{style:"max-height:520px;overflow:auto"}); viewSet(box); importSection(box); s.append(box); });
 }
 document.getElementById("gear").addEventListener("click",openSettings);
+document.getElementById("addbtn").addEventListener("click",()=>openAdd());
 function render(){
   renderTabs();
   document.getElementById("title").textContent = Object.fromEntries(TABS)[state.tab];
@@ -1031,6 +1032,67 @@ async function parseExport(file,status,list){
     impSave(); render(); status.textContent=`完成：加進 ${n} 則${d?`、${d} 則本來就有`:""}。在「${[...new Set(rows.filter(r=>r[0].checked).map(r=>CAT_NAME[r[1].value]))].join("／")}」分頁最下面「我的匯入」。`; };
   list.append(go);
 }
+
+/* --- ＋ 加入一則：貼上連結（IG／FB／YouTube），或從 iPhone 捷徑帶 ?add=連結 進來 --- */
+function parseLink(raw){
+  let u; try{ u=new URL(String(raw).trim()); }catch(e){ return null; }
+  const h=u.hostname.replace(/^www\.|^m\.|^mobile\./,"");
+  if(/instagram\.com$/.test(h)){ const m=u.pathname.match(/^\/(?:[^/]+\/)?(p|reel|reels|tv)\/([A-Za-z0-9_-]+)/); return m?{src:"ig",path:`${m[1]==="reels"?"reel":m[1]}/${m[2]}/`}:null; }
+  if(/facebook\.com$|fb\.watch$|fb\.com$/.test(h)){ u.search=""; u.hash=""; return {src:"fb",path:u.href}; }
+  if(/youtube\.com$|youtu\.be$/.test(h)){
+    const id=h==="youtu.be"?u.pathname.slice(1).split("/")[0]:(u.pathname.match(/^\/(?:shorts|live|embed)\/([A-Za-z0-9_-]{6,})/)||[])[1]||u.searchParams.get("v");
+    return id?{src:"yt",path:id}:null;
+  }
+  return null;
+}
+async function linkTitle(link){            // YouTube 可以抓到標題；IG／FB 不開放，要自己打
+  if(link.src!=="yt") return "";
+  try{ const r=await fetch("https://noembed.com/embed?url="+encodeURIComponent(url("yt",link.path))); const j=await r.json(); return j.title||""; }catch(e){ return ""; }
+}
+function openAdd(prefill){
+  openSheet(s=>{
+    s.append(el("h4",{text:"加入一則收藏"}));
+    const status=el("div",{class:"count"});
+    const linkIn=el("input",{class:"search",type:"url",placeholder:"貼上 Instagram／Facebook／YouTube 連結","aria-label":"連結"});
+    const nameIn=el("input",{class:"search",type:"text",placeholder:"店名或標題（必填）","aria-label":"店名"});
+    const addrIn=el("input",{class:"search",type:"text",placeholder:"地址（選填，有填就會上地圖）","aria-label":"地址"});
+    let cat="food"; const seg=el("div",{class:"segbar",style:"margin-bottom:10px"});
+    const drawSeg=()=>{ seg.textContent=""; for(const [k,n] of Object.entries(CAT_NAME)) seg.append(el("button",{type:"button","aria-pressed":String(cat===k),text:n,onclick:()=>{cat=k;drawSeg();}})); };
+    drawSeg();
+    const paste=el("button",{class:"chip",type:"button",text:"從剪貼簿貼上",onclick:async()=>{
+      try{ const t=await navigator.clipboard.readText(); if(t){ linkIn.value=t.trim(); linkIn.dispatchEvent(new Event("input")); } else status.textContent="剪貼簿是空的。先到 IG／FB 按「複製連結」。"; }
+      catch(e){ status.textContent="讀不到剪貼簿，請長按上面的框，選「貼上」。"; }
+    }});
+    const save=el("button",{class:"btn primary",type:"button",text:"加入"});
+    linkIn.addEventListener("input",async()=>{
+      const l=parseLink(linkIn.value);
+      if(!l){ status.textContent=linkIn.value.trim()?"這不是 Instagram／Facebook／YouTube 的連結。":""; return; }
+      status.textContent={ig:"Instagram 不讓 App 讀貼文內容，店名請自己打。",fb:"Facebook 不讓 App 讀貼文內容，店名請自己打。",yt:"抓標題中…"}[l.src];
+      if(l.src==="yt"&&!nameIn.value){ const t=await linkTitle(l); if(t&&!nameIn.value){ nameIn.value=t.replace(/#\S+/g,"").trim(); status.textContent="抓到標題了，可以改。"; } }
+    });
+    save.onclick=async()=>{
+      const l=parseLink(linkIn.value); if(!l){ status.textContent="請先貼上連結。"; linkIn.focus(); return; }
+      const name=nameIn.value.trim(); if(!name){ status.textContent="請填店名或標題。"; nameIn.focus(); return; }
+      save.disabled=true; let geo=null;
+      if(addrIn.value.trim()){ status.textContent="找地址中…"; geo=await geocode(addrIn.value.trim()); if(!geo) status.textContent="找不到這個地址，先加進清單（不上地圖）。"; }
+      const r=addImported({src:l.src,path:l.path,title:name,text:addrIn.value.trim(),group:"自己加的",cat,lat:geo?.lat,lng:geo?.lng});
+      impSave(); render(); save.disabled=false;
+      if(r==="dup"){ status.textContent="這則本來就有了。"; return; }
+      closeSheet();
+      const b=document.getElementById("banner"); document.getElementById("bh").textContent=r==="place"?"已加入並放上地圖":"已加入清單";
+      document.getElementById("bb").textContent=name+(r==="place"?"":`　（在「${CAT_NAME[cat]}」分頁最下面「我的匯入」）`);
+      b.classList.add("show"); clearTimeout(bTimer); bTimer=setTimeout(()=>b.classList.remove("show"),5000);
+    };
+    s.append(el("div",{style:"display:flex;gap:8px;align-items:center;margin-bottom:8px"},el("span",{class:"count",style:"flex:1",text:"從 IG／FB／YouTube 按「分享 → 複製連結」，再回來這裡。"}),paste));
+    s.append(linkIn,nameIn,addrIn,seg,status,el("div",{class:"btns",style:"grid-template-columns:1fr;margin-top:8px"},save));
+    if(prefill){ linkIn.value=prefill; linkIn.dispatchEvent(new Event("input")); setTimeout(()=>nameIn.focus(),350); }
+  });
+}
+(function(){                                  // iPhone 捷徑：…/pocket-map/?add=<連結>
+  const q=new URLSearchParams(location.search); const a=q.get("add"); if(!a) return;
+  history.replaceState(null,"",location.pathname);
+  setTimeout(()=>openAdd(a),300);
+})();
 
 render(); startGPS();
 </script>
