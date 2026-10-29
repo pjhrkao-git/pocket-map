@@ -4,6 +4,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="口袋地圖">
 <meta name="theme-color" content="#2b3a67">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
@@ -443,7 +445,7 @@ const TIPS = [
 const SHOPPING = [["藥妝・保養・彩妝", "唐吉訶德 5 款寶藏藥妝（UTENA 碎髮整理等）", ["DeManstBADZ"]], ["藥妝・保養・彩妝", "曼秀雷敦 pH 變色護唇膏", ["Db8A7-zhXM8"]], ["藥妝・保養・彩妝", "SUGI 藥局 7 樣回購品（優惠券大方）", ["DYwd9YuBwY4"]], ["藥妝・保養・彩妝", "防曬＋控油小物", ["DbU4W9xzOat"]], ["藥妝・保養・彩妝", "痘痘神藥", ["DbkPsSGzyYJ"]], ["藥妝・保養・彩妝", "CHPT9 毛孔粉刺精華", ["DaQD1JZRb3z"]], ["藥妝・保養・彩妝", "ereru 雙重 PDRN 外泌體精華（共 4 則同款）", ["DblOZYYxea8", "DZca9fVSFHs", "DYb_jUFxhZj", "DYb_bMBxODG"]], ["藥妝・保養・彩妝", "膠囊精華（亮白）", ["DYTC8DoMQyP"]], ["藥妝・保養・彩妝", "粉嫩唇膏／眼線膠筆", ["DZXOxytByo6"]], ["藥妝・保養・彩妝", "藥妝 5 選（Chacott 臥蠶筆、myBoostars）", ["DYR4THwPC8G"]], ["藥妝・保養・彩妝", "每月藥妝清單（Transino、新 LULU、LOXONIN）", ["DbYGTFcSi7o"]], ["藥妝・保養・彩妝", "毛孔去角質", ["DbKlRKnzSmB"]], ["藥妝・保養・彩妝", "@cosme TOKYO 六樣閉眼買", ["DaktmhHBhLN"]], ["藥妝・保養・彩妝", "藥妝必購清單（彩妝／藥品／髮品）", ["DWET3A1hTDQ"]], ["藥妝・保養・彩妝", "彩妝保養必買", ["DUzkndGgUur"]], ["藥妝・保養・彩妝", "彩妝篇", ["DXowfrhEhfV"]], ["藥妝・保養・彩妝", "住日 7 年回購好物（DUO 卸妝膏、いち髪）", ["DaaWn8HPwMZ"]], ["藥妝・保養・彩妝", "腳跟乾裂改善＋20% 維他命 C", ["DaKoMBrzKAw"]], ["藥妝・保養・彩妝", "Her lip to 擴香", ["DYuTMlDvZIJ"]], ["髮品", "BOTANIST 新款護髮油", ["DeG6gr_B3Y2"]], ["髮品", "BOTANIST 護髮油（乾燥受損髮）", ["DdldpN4TAAl"]], ["髮品", "福岡藥妝：myBoostars 角蛋白精華水", ["DYUfqnRpt1J"]], ["髮品", "抗靜電瀏海梳 3 品牌實測", ["DXCKgO6kwdn"]], ["髮品", "SALONIA 光澤順髮梳", ["DYRl_4jTbbs"]], ["髮品", "靜電光澤梳（唐吉訶德）", ["DYoK2qWzEz1"]], ["髮品", "無印良品頭皮精華", ["DbAoLqIpZrk"]], ["髮品", "DARIYA 蓋白髮", ["DbGK7FUJbAd"]], ["髮品", "CIELO 染髮梳", ["DUAo9_2ElhE"]], ["無印良品／3COINS／大創／Seria", "無印廣口收納包", ["DZCBIz2TbmH"]], ["無印良品／3COINS／大創／Seria", "無印束口袋", ["Daw_v8nzcHv"]], ["無印良品／3COINS／大創／Seria", "無印必買第二集（頭皮噴霧、睡衣、直角襪）", ["DbN6-7MPPrM"]], ["無印良品／3COINS／大創／Seria", "無印線香盒＋日本香堂線香", ["DXHMPJ-AZLB"]], ["無印良品／3COINS／大創／Seria", "無印熱門品", ["DbIPSXhTcT7"]], ["無印良品／3COINS／大創／Seria", "無印日本限定 BB 霜", ["DZFfMEHvogk"]], ["無印良品／3COINS／大創／Seria", "3COINS 電子儲金箱", ["Dbf2quszNnQ"]], ["無印良品／3COINS／大創／Seria", "3COINS 必買 3 選（煮蛋神器、外套掛繩）", ["DW803vTgXYw"]], ["無印良品／3COINS／大創／Seria", "3COINS 真空壓縮收納袋", ["DalAtAzoRQt"]], ["無印良品／3COINS／大創／Seria", "大創版 AirTag", ["Da4IFDchaN_"]], ["無印良品／3COINS／大創／Seria", "Seria 試用包密封夾", ["DcgPm4uTDek"]], ["食品・調味料・抹茶", "日本超市神級調味料 7 選", ["Ddl2PYgkshr"]], ["食品・調味料・抹茶", "HAGINO 海鮮高湯鹽", ["DZFHeImyBaI"]], ["食品・調味料・抹茶", "森下仁丹益生菌", ["Db4vBK4Rmtq"]], ["食品・調味料・抹茶", "北千住 Ajo Base 大蒜鹽麴", ["DYzDLplT0-5"]], ["食品・調味料・抹茶", "新宿池田屋抹茶店", ["DXbRiSak_fj"]], ["食品・調味料・抹茶", "抹茶品牌比較", ["DYUNkG8y_yu"]], ["食品・調味料・抹茶", "東京高顏值甜點", ["DaXrDcdTLLa"]], ["食品・調味料・抹茶", "地瓜／楓糖奶油抹醬（唐吉訶德）", ["Da1ZeMYhdn3"]], ["食品・調味料・抹茶", "拌飯醬（避雷）", ["DUVVZTpE8zd"]], ["食品・調味料・抹茶", "新千歲機場伴手禮（起司蛋糕、抹茶）", ["DaDL_A8TbQT"]], ["食品・調味料・抹茶", "東京 150 年老店客製高湯包", ["Dap00-nTffb"]], ["廚房・家居", "Hirone 琺瑯方形奶鍋", ["DeNmQlXAcjG"]], ["廚房・家居", "日革除蟎墊", ["DdDTgfeCRWo"]], ["廚房・家居", "recolte 無線調理機（刀頭有鋰電池要隨身帶）", ["DazZ3z9Ck9f"]], ["購物地點・攻略", "唐吉訶德必買", ["DakWgWJjWAt"]], ["購物地點・攻略", "唐吉訶德生活好物", ["DY3l-KPB_B8"]], ["購物地點・攻略", "OS Drug 便宜藥妝（只收現金、19:30 打烊）", ["DUN5DBMkisA"]], ["購物地點・攻略", "日本好市多比唐吉訶德便宜", ["DVYKlkQEVpQ"]], ["購物地點・攻略", "新宿 BEAMS JAPAN", ["DZUd2EthF4d"]], ["購物地點・攻略", "新宿百貨懶人包", ["DbTCkCHE9TH"]], ["購物地點・攻略", "樂天免稅店", ["DanFmkKko5c"]], ["購物地點・攻略", "JINS 新宿全球最大旗艦店", ["DYUYec-RCEQ"]], ["購物地點・攻略", "東京 2026 鞋店清單", ["Da-fEyDve0y"]], ["購物地點・攻略", "亮鑽漁網鞋", ["Ddq_Qi0Tr5V"]], ["購物地點・攻略", "東京購物（topologie、CELINE）", ["DXwJJKzyJk-"]], ["購物地點・攻略", "富士山紀念品 TOP7", ["Dbuu0TGS9bo"]], ["購物地點・攻略", "札幌客製照片禮品", ["DX9boJ5BXbL"]], ["購物地點・攻略", "羽田機場寶可夢", ["DZhuf9VTzTX"]], ["購物地點・攻略", "燈箱磁鐵貼（2 則同款）", ["DbWVPihz1Rq", "DbTNNIwTLS3"]], ["綜合清單", "日本戰利品開箱", ["Dap30gTSTwo"]], ["綜合清單", "2026 日本必買清單", ["DY2JQ1kP6lt"]], ["綜合清單", "日本必買 100 樣", ["DVbeCmjEjMF"]], ["綜合清單", "Lexus 日本旅行廣告", ["DZXuEeEo4kT"]], ["必逛好店", "BEAMS 淺草寺快閃（至 2027/2/28）", ["De_40kMvjyk"]], ["必逛好店", "CENE 日系飾品", ["DeQk0bnS-Bt"]], ["必逛好店", "證交所股票御守", ["Ddqn3UpDK-U"]], ["必逛好店", "東京 4 家平價女鞋路線", ["DdG2AywzvEi"]], ["必逛好店", "思夢樂必逛", ["DdG0CMqBniB"]], ["必逛好店", "表參道 Google Store", ["DcSyDm4SWUH"]], ["必逛好店", "上野多慶屋", ["DZCcKL4JUdc"]], ["必逛好店", "日本人不去的新宿地方", ["DcERFkfhZxg"]], ["必逛好店", "富士山哭泣君", ["DXjsBTqSL6P"]], ["必逛好店", "Offen 日系女鞋", ["Db5YPqvzxBQ"]], ["必逛好店", "財運神社（洗錢）", ["Db5g95yTyNr"]], ["必逛好店", "江戶東京建物園", ["DU4fk_XkmdW"]], ["必逛好店", "飯倉熊野神社（水占卜）", ["Da1678PTwFG"]], ["必逛好店", "雨具 9 樣（HONDA 聯名雨衣）", ["DZZuraHzXpu"]], ["必逛好店", "FAMIMA PARK 麻布台", ["DanDHENh1fL"]], ["必逛好店", "新宿 5 公里散步路線", ["Da6efjaCdib"]], ["必逛好店", "銀座茅乃舍（隈研吾）", ["DZFPrHAyG7y"]], ["必逛好店", "FamilyMart 麻布台旗艦店", ["DasTWB3vFaN"]], ["必逛好店", "麻布台 TEAPON", ["DXxo3ohhu_w"]], ["必逛好店", "東京 6 間獨旅咖啡廳", ["DYFGOV5NW1v"]], ["必逛好店", "爬樓梯上東京鐵塔（¥1,500）", ["DYMzCTdz3EH"]], ["必逛好店", "歐風紅茶專賣店", ["DZptnxlhtrc"]], ["必逛好店", "NEWoMan 高輪", ["DbUt5KcJC63"]], ["必逛好店", "WORKMAN", ["DUknhNHk_sR"]], ["必逛好店", "麻布台 Dashi Okume 高湯體驗（要預約）", ["DZ2MN0yBX9A"]], ["必逛好店", "Found MUJI 青山", ["DUVn-BBk-SN"]]];   // [group, title, [ig codes]]
 const SHOPGROUPS = ["藥妝・保養・彩妝","髮品","無印良品／3COINS／大創／Seria","食品・調味料・抹茶","廚房・家居","購物地點・攻略","綜合清單"];
 const placeFor = codes => PLACES.find(p=>codes.some(c=>p.ig.includes("/p/"+c+"/")));
-const url = (s,p) => ({ig:"https://www.instagram.com/",fb:"https://www.facebook.com/",yt:"https://www.youtube.com/shorts/"})[s]+p;
+const url = (s,p) => /^https?:/.test(p) ? p : ({ig:"https://www.instagram.com/",fb:"https://www.facebook.com/",yt:"https://www.youtube.com/shorts/"})[s]+p;
 const SRCNAME = {ig:"Instagram",fb:"Facebook",yt:"YouTube"};
 const srcOf = link => link.includes("youtube")?"yt":link.includes("facebook")?"fb":"ig";
 // YouTube 「日本」清單裡只有影片、沒寫店名地址的合輯
@@ -658,7 +660,7 @@ function viewSet(v){
   v.append(el("div",{class:"empty",text:`資料來源：Instagram @cardiganz、Facebook 已儲存、YouTube @cardi7259 · ${PLACES.length} 個地點、${RECIPES.length} 則食譜`}));
 }
 function openSettings(){
-  openSheet(s=>{ s.append(el("h4",{text:"設定"})); const box=el("div",{style:"max-height:520px;overflow:auto"}); viewSet(box); s.append(box); });
+  openSheet(s=>{ s.append(el("h4",{text:"設定"})); const box=el("div",{style:"max-height:520px;overflow:auto"}); viewSet(box); importSection(box); s.append(box); });
 }
 document.getElementById("gear").addEventListener("click",openSettings);
 function render(){
@@ -667,7 +669,7 @@ function render(){
   document.getElementById("locname").textContent = state.gps ? `GPS（±${Math.round(state.gps.acc)} m）` : state.gpsWait ? "定位中…" : here()[0] + (state.gpsErr ? "（" + state.gpsErr + "）" : "");
   document.getElementById("locmode").textContent = state.gps ? "GPS ▾" : "模擬 ▾";
   const v=document.getElementById("view"); v.textContent=""; v.scrollTop=0;
-  ({near:viewNear,map:viewMap,food:viewFood,shop:viewShop,trip:viewTrip})[state.tab](v);
+  ({near:viewNear,map:viewMap,food:v=>{viewFood(v);importedSection(v,'food');},shop:v=>{viewShop(v);importedSection(v,'shop');},trip:v=>{viewTrip(v);importedSection(v,'trip');}})[state.tab](v);
 }
 
 let bTimer;
@@ -801,6 +803,192 @@ document.getElementById("fab").addEventListener("click",openChat);
 document.getElementById("nRec").textContent=RECIPES.length;
 document.getElementById("nTip").textContent=TIPS.length;
 document.getElementById("nBuy").textContent=SHOPPING.filter(s=>s[0]!=="必逛好店").length;
+/* ---------- 匯入自己的收藏（YouTube 登入／IG・FB 資料檔） ---------- */
+const GOOGLE_CLIENT_ID = "718558581182-19nmct9phsq39dq41p4nhj4i4mmhp883.apps.googleusercontent.com";
+const IMP_KEY = "pocketmap_import";
+const IMP = { places:[], items:[] };          // items: {src,path,title,sub,cat,group}
+try { Object.assign(IMP, JSON.parse(localStorage.getItem(IMP_KEY) || "{}")); } catch(e){}
+IMP.places = IMP.places || []; IMP.items = IMP.items || [];
+const impSave = () => { try { localStorage.setItem(IMP_KEY, JSON.stringify(IMP)); } catch(e){} };
+// imported places join the main list so 附近／地圖 see them
+IMP.places.forEach(p => PLACES.push(p));
+
+const CAT_NAME = { food:"美食", shop:"購物", trip:"旅行" };
+const PLACE_CAT = { food:"日本必吃", shop:"日本必買", trip:"日本拍照景點" };
+function guessCat(text){
+  if(/必買|必买|藥妝|药妆|購物|购物|無印|MUJI|3COINS|大創|唐吉|伴手禮|戰利品|開箱|好物/i.test(text)) return "shop";
+  if(/景點|景点|拍照|神社|展望|行程|攻略|入境|退稅|退税|交通|住宿|飯店|酒店|機場|机场|一日遊|散步/i.test(text)) return "trip";
+  return "food";
+}
+// first Japanese street address in a text, or the first 📍 line
+function findAddress(text){
+  const m = text.match(/(?:〒\s*\d{3}-?\d{4}\s*)?((?:東京都|北海道|京都府|大阪府|[一-鿿]{2,3}[県縣])[^\s\n、，。()（）｜|]{3,40})/);
+  if(m) return m[1];
+  const pin = text.split("\n").find(l=>/^\s*📍/.test(l));
+  return pin ? pin.replace(/^\s*📍\s*/,"").replace(/[｜|].*$/,"").trim().slice(0,40) : "";
+}
+let lastGeo = 0;
+async function geocode(q, signal){
+  const wait = 1100 - (Date.now() - lastGeo); if(wait>0) await new Promise(r=>setTimeout(r,wait));
+  lastGeo = Date.now();
+  const u = "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=jp&accept-language=ja&q=" + encodeURIComponent(q);
+  try { const j = await (await fetch(u,{signal})).json(); return j[0] ? {lat:+j[0].lat, lng:+j[0].lon} : null; } catch(e){ return null; }
+}
+function addImported(rec){                 // rec: {src,path,title,text,group,cat?, lat?, lng?}
+  const cat = rec.cat || guessCat(rec.title + " " + (rec.text||""));
+  const link = url(rec.src, rec.path);
+  if(PLACES.some(p=>p.ig===link) || IMP.items.some(i=>i.src===rec.src&&i.path===rec.path)) return "dup";
+  if(rec.lat!=null){
+    const p = { c:PLACE_CAT[cat], n:rec.title.slice(0,40), t:(rec.text||"").replace(/\s+/g," ").slice(0,80), a:rec.lat, o:rec.lng, ig:link, imp:1 };
+    IMP.places.push(p); PLACES.push(p); return "place";
+  }
+  IMP.items.push({ src:rec.src, path:rec.path, title:rec.title.slice(0,60), sub:rec.group, cat, group:rec.group }); return "item";
+}
+function clearImported(){
+  for(let i=PLACES.length-1;i>=0;i--) if(PLACES[i].imp) PLACES.splice(i,1);
+  IMP.places=[]; IMP.items=[]; impSave(); render();
+}
+
+/* --- shown at the bottom of 美食／購物／旅行 --- */
+function importedSection(v, cat){
+  const items = IMP.items.filter(i=>i.cat===cat); if(!items.length) return;
+  const groups = [...new Set(items.map(i=>i.group))];
+  for(const g of groups){ const rows = items.filter(i=>i.group===g);
+    v.append(el("div",{class:"sec"},el("span",{text:"我的匯入 · "+g}),el("em",{text:String(rows.length)})));
+    const l=el("div",{class:"list"}); rows.forEach(i=>l.append(item(i.src,i.path,i.title,i.sub))); v.append(l); }
+}
+
+/* --- settings entry --- */
+function importSection(v){
+  const n = IMP.places.length + IMP.items.length;
+  const box=el("div",{class:"set"});
+  box.append(el("div",{class:"row"},el("span",{text:n?`已匯入 ${IMP.places.length} 個地點、${IMP.items.length} 則`:"還沒匯入自己的收藏"}),
+    el("button",{class:"chip",type:"button",text:"匯入…",onclick:openImport})));
+  if(n) box.append(el("div",{class:"row"},el("span",{text:"清除所有匯入的資料"}),el("button",{class:"chip",type:"button",text:"清除",onclick:()=>{clearImported();openSettings();}})));
+  v.append(el("div",{class:"sec",text:"匯入自己的收藏"}),box);
+}
+
+function openImport(){
+  openSheet(s=>{
+    sheet.classList.add("tall");
+    s.append(el("h4",{text:"匯入收藏"}));
+    const body=el("div",{style:"flex:1;min-height:0;overflow:auto;display:grid;gap:10px;align-content:start"});
+    s.append(body);
+    // YouTube
+    const yt=el("div",{class:"set",style:"padding:12px 14px"});
+    yt.append(el("div",{style:"font-weight:700;margin-bottom:4px",text:"YouTube 播放清單"}),
+      el("div",{class:"count",text:"登入 Google，勾選要匯入的清單。影片說明裡有地址的會自動上地圖。"}));
+    const ytStatus=el("div",{class:"count",id:"ytStatus"});
+    const ytList=el("div",{class:"list"});
+    const ytBtn=el("button",{class:"btn primary",type:"button",text:"登入 Google 並讀取清單",onclick:()=>ytLogin(ytStatus,ytList,ytBtn)});
+    yt.append(ytBtn,ytStatus,ytList); body.append(yt);
+    // IG / FB file
+    const fb=el("div",{class:"set",style:"padding:12px 14px"});
+    fb.append(el("div",{style:"font-weight:700;margin-bottom:4px",text:"Instagram／Facebook 資料檔"}),
+      el("div",{class:"count",text:"到 IG 或 FB 的「設定 → 下載你的資料」，只勾「已儲存」、格式選 JSON，把收到的 zip 放進來，再勾選收藏夾。這種檔案只有連結，店名地址要自己補。"}));
+    const fileIn=el("input",{type:"file",id:"impFile",accept:".zip,.json,application/zip,application/json",style:"font-size:13px"});
+    const fbStatus=el("div",{class:"count"}); const fbList=el("div",{class:"list"});
+    fileIn.addEventListener("change",()=>fileIn.files[0]&&parseExport(fileIn.files[0],fbStatus,fbList));
+    fb.append(fileIn,fbStatus,fbList); body.append(fb);
+  });
+}
+
+/* --- YouTube --- */
+let ytToken=null;
+function ytLogin(status,list,btn){
+  if(!window.google?.accounts?.oauth2){ status.textContent="Google 登入元件還沒載入，等一下再按一次。"; return; }
+  status.textContent="開啟 Google 登入視窗…";
+  const tc=google.accounts.oauth2.initTokenClient({ client_id:GOOGLE_CLIENT_ID, scope:"https://www.googleapis.com/auth/youtube.readonly",
+    callback:async r=>{ if(!r.access_token){ status.textContent="沒有登入成功。"; return; } ytToken=r.access_token; await ytPlaylists(status,list,btn); },
+    error_callback:e=>{ status.textContent="登入取消或失敗："+(e.type||""); } });
+  tc.requestAccessToken();
+}
+async function ytGet(path,params){
+  const u=new URL("https://www.googleapis.com/youtube/v3/"+path); Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r=await fetch(u,{headers:{Authorization:"Bearer "+ytToken}}); if(!r.ok) throw new Error("YouTube API "+r.status); return r.json();
+}
+async function ytPlaylists(status,list,btn){
+  status.textContent="讀取播放清單…"; list.textContent="";
+  try{
+    const pls=[]; let pageToken="";
+    do{ const j=await ytGet("playlists",{part:"snippet,contentDetails",mine:"true",maxResults:50,pageToken}); pls.push(...j.items); pageToken=j.nextPageToken||""; }while(pageToken);
+    if(!pls.length){ status.textContent="這個帳號沒有播放清單。"; return; }
+    btn.hidden=true; status.textContent=`${pls.length} 個清單，勾選後按匯入：`;
+    const boxes=[];
+    for(const p of pls){ const cb=el("input",{type:"checkbox",id:"pl_"+p.id}); boxes.push([cb,p]);
+      list.append(el("label",{class:"item",for:"pl_"+p.id,style:"cursor:pointer"},el("div",{},el("div",{class:"nm",text:p.snippet.title}),el("div",{class:"sub",text:`${p.contentDetails.itemCount} 部 · ${p.status?.privacyStatus||""}`})),cb)); }
+    const go=el("button",{class:"btn primary",type:"button",text:"匯入勾選的清單"});
+    go.onclick=()=>ytImport(boxes.filter(([cb])=>cb.checked).map(([,p])=>p),status,go);
+    list.append(go);
+  }catch(e){ status.textContent="讀取失敗："+e.message; }
+}
+async function ytImport(pls,status,go){
+  if(!pls.length){ status.textContent="先勾選至少一個清單。"; return; }
+  go.disabled=true; let nPlace=0,nItem=0,nDup=0;
+  for(const p of pls){
+    let pageToken="",vids=[];
+    do{ const j=await ytGet("playlistItems",{part:"snippet",playlistId:p.id,maxResults:50,pageToken}); vids.push(...j.items); pageToken=j.nextPageToken||""; }while(pageToken);
+    for(let i=0;i<vids.length;i++){
+      const sn=vids[i].snippet, id=sn.resourceId?.videoId; if(!id||sn.title==="Private video"||sn.title==="Deleted video") continue;
+      status.textContent=`「${p.snippet.title}」${i+1}/${vids.length}：${sn.title.slice(0,30)}`;
+      const addr=findAddress(sn.description||""); let geo=null;
+      if(addr) geo=await geocode(addr);
+      const r=addImported({src:"yt",path:id,title:sn.title.replace(/#\S+/g,"").trim()||sn.title,text:addr||sn.description,group:p.snippet.title,lat:geo?.lat,lng:geo?.lng});
+      if(r==="place")nPlace++; else if(r==="item")nItem++; else nDup++;
+    }
+  }
+  impSave(); render();
+  status.textContent=`完成：${nPlace} 個上了地圖、${nItem} 則加進清單${nDup?`、${nDup} 則本來就有`:""}。沒有地址的影片在各分頁最下面「我的匯入」。`;
+  go.disabled=false;
+}
+
+/* --- IG / FB export --- */
+async function parseExport(file,status,list){
+  status.textContent="讀取檔案…"; list.textContent="";
+  let texts=[];
+  try{
+    if(/\.zip$/i.test(file.name)){
+      if(!window.JSZip){ status.textContent="解壓元件還沒載入，等一下再選一次。"; return; }
+      const z=await JSZip.loadAsync(file);
+      for(const f of Object.values(z.files)) if(/\.json$/i.test(f.name)&&/saved|collection/i.test(f.name)) texts.push([f.name,await f.async("string")]);
+      if(!texts.length) for(const f of Object.values(z.files)) if(/\.json$/i.test(f.name)) texts.push([f.name,await f.async("string")]);
+    } else texts.push([file.name,await file.text()]);
+  }catch(e){ status.textContent="檔案讀不了："+e.message; return; }
+  // walk any JSON, collect IG/FB links with the nearest title
+  const found=[]; const LINK=/https?:\/\/(?:www\.)?(instagram\.com\/(?:p|reel|reels)\/[^\s"?]+|facebook\.com\/[^\s"]+|fb\.watch\/[^\s"]+)/;
+  const fix=s=>{ try{ return decodeURIComponent(escape(s)); }catch(e){ return s; } };   // IG exports mojibake UTF-8
+  for(const [name,txt] of texts){
+    let j; try{ j=JSON.parse(txt); }catch(e){ continue; }
+    const walk=(node,title)=>{
+      if(Array.isArray(node)){ node.forEach(n=>walk(n,title)); return; }
+      if(node&&typeof node==="object"){
+        const t=node.title||node.name||node.Name?.value||title;
+        for(const [k,v] of Object.entries(node)){
+          if(typeof v==="string"){ const m=v.match(LINK); if(m) found.push({url:m[0],title:fix(String(t||"")),file:name}); }
+          else walk(v,t);
+        }
+      }
+    };
+    walk(j,"");
+  }
+  if(!found.length){ status.textContent="這個檔案裡找不到 Instagram 或 Facebook 的貼文連結。確認下載時有勾「已儲存」。"; return; }
+  // group by collection name guess: IG puts collection name as title of a header row; fall back to file name
+  const groups={}; for(const f of found){ const g=f.title&&!/^https?:/.test(f.title)?f.title:f.file.replace(/.*\//,"").replace(/\.json$/,""); (groups[g]=groups[g]||[]).push(f); }
+  status.textContent=`找到 ${found.length} 則，分成 ${Object.keys(groups).length} 組。勾選要匯入的組，選它屬於哪一類：`;
+  const rows=[];
+  for(const [g,arr] of Object.entries(groups)){
+    const cb=el("input",{type:"checkbox"}); const sel=el("select",{style:"font:inherit;font-size:13px"});
+    for(const [k,n] of Object.entries(CAT_NAME)) sel.append(el("option",{value:k,text:n}));
+    sel.value=guessCat(g); rows.push([cb,sel,g,arr]);
+    list.append(el("div",{class:"item"},el("div",{style:"min-width:0"},el("div",{class:"nm",text:g}),el("div",{class:"sub",text:`${arr.length} 則`})),el("div",{style:"display:flex;gap:8px;align-items:center"},sel,cb)));
+  }
+  const go=el("button",{class:"btn primary",type:"button",text:"匯入勾選的組"});
+  go.onclick=()=>{ let n=0,d=0; for(const [cb,sel,g,arr] of rows){ if(!cb.checked) continue;
+      for(const f of arr){ const ig=f.url.match(/instagram\.com\/(.+)/); const r=addImported({src:ig?"ig":"fb",path:ig?ig[1].replace(/\/?$/,"/"):f.url,title:(f.title&&!/^https?:/.test(f.title)?f.title:"")||(ig?"Instagram 貼文":"Facebook 貼文"),group:g,cat:sel.value}); r==="dup"?d++:n++; } }
+    impSave(); render(); status.textContent=`完成：加進 ${n} 則${d?`、${d} 則本來就有`:""}。在「${[...new Set(rows.filter(r=>r[0].checked).map(r=>CAT_NAME[r[1].value]))].join("／")}」分頁最下面「我的匯入」。`; };
+  list.append(go);
+}
+
 render(); startGPS();
 </script>
 
