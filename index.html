@@ -953,8 +953,11 @@ async function ytPlaylists(status,list,btn){
     for(const p of pls){ const cb=el("input",{type:"checkbox",id:"pl_"+p.id}); boxes.push([cb,p]);
       list.append(el("label",{class:"item",for:"pl_"+p.id,style:"cursor:pointer"},el("div",{},el("div",{class:"nm",text:p.snippet.title}),el("div",{class:"sub",text:`${p.contentDetails.itemCount} 部 · ${p.status?.privacyStatus||""}`})),cb)); }
     const go=el("button",{class:"btn primary",type:"button",text:"匯入勾選的清單"});
-    go.onclick=()=>ytImport(boxes.filter(([cb])=>cb.checked).map(([,p])=>p),status,go);
-    list.append(go);
+    // progress shows right under the button too (the top status line is scrolled out of view)
+    const note=el("div",{class:"count",style:"padding:8px 2px;font-weight:600"});
+    const both={set textContent(t){ status.textContent=t; note.textContent=t; }};
+    go.onclick=()=>{ note.scrollIntoView({block:"nearest"}); ytImport(boxes.filter(([cb])=>cb.checked).map(([,p])=>p),both,go); };
+    list.append(go,note);
   }catch(e){
     if(/401/.test(e.message)){ ytToken=null; try{ sessionStorage.removeItem("yt_token"); }catch(_){} btn.hidden=false; status.textContent="登入過期了，請再按一次「登入 Google」。"; }
     else status.textContent="讀取失敗："+e.message;
@@ -962,7 +965,7 @@ async function ytPlaylists(status,list,btn){
 }
 async function ytImport(pls,status,go){
   if(!pls.length){ status.textContent="先勾選至少一個清單。"; return; }
-  go.disabled=true; let nPlace=0,nItem=0,nDup=0;
+  const label=go.textContent; go.disabled=true; go.textContent="匯入中…"; let nPlace=0,nItem=0,nDup=0;
   try{
   for(const p of pls){
     let pageToken="",vids=[];
@@ -976,10 +979,10 @@ async function ytImport(pls,status,go){
       if(r==="place")nPlace++; else if(r==="item")nItem++; else nDup++;
     }
   }
-  }catch(e){ impSave(); render(); status.textContent=`匯入到一半出錯（${e.message}），已存下 ${nPlace+nItem} 則，可以再按一次匯入繼續。`; go.disabled=false; return; }
+  }catch(e){ impSave(); render(); status.textContent=`匯入到一半出錯（${e.message}），已存下 ${nPlace+nItem} 則，可以再按一次匯入繼續。`; go.disabled=false; go.textContent=label; return; }
   impSave(); render();
   status.textContent=`完成：${nPlace} 個上了地圖、${nItem} 則加進清單${nDup?`、${nDup} 則本來就有`:""}。沒有地址的影片在各分頁最下面「我的匯入」。`;
-  go.disabled=false;
+  go.disabled=false; go.textContent=label;
 }
 
 /* --- IG / FB export --- */
