@@ -890,13 +890,31 @@ function openImport(){
     const ytBtn=el("button",{class:"btn primary",type:"button",text:"登入 Google 並讀取清單",onclick:()=>ytLogin(ytStatus,ytList,ytBtn)});
     yt.append(ytBtn,ytStatus,ytList); body.append(yt);
     // IG / FB file
+    // Instagram／Facebook 沒有開放讀收藏的 API，只能用 Meta 官方的「下載你的資訊」檔案：把步驟講清楚，免得以為是壞掉
     const fb=el("div",{class:"set",style:"padding:12px 14px"});
-    fb.append(el("div",{style:"font-weight:700;margin-bottom:4px",text:"Instagram／Facebook 資料檔"}),
-      el("div",{class:"count",text:"到 IG 或 FB 的「設定 → 下載你的資料」，只勾「已儲存」、格式選 JSON，把收到的 zip 放進來，再勾選收藏夾。這種檔案只有連結，店名地址要自己補。"}));
-    const fileIn=el("input",{type:"file",id:"impFile",accept:".zip,.json,application/zip,application/json",style:"font-size:13px"});
-    const fbStatus=el("div",{class:"count"}); const fbList=el("div",{class:"list"});
-    fileIn.addEventListener("change",()=>fileIn.files[0]&&parseExport(fileIn.files[0],fbStatus,fbList));
-    fb.append(fileIn,fbStatus,fbList); body.append(fb);
+    const step=(n,title,...kids)=>el("div",{style:"display:grid;grid-template-columns:24px 1fr;gap:8px;margin-top:12px"},
+      el("div",{style:"width:22px;height:22px;border-radius:50%;background:var(--indigo);color:var(--sheet);display:grid;place-items:center;font-size:12px;font-weight:700",text:String(n)}),
+      el("div",{style:"min-width:0"},el("div",{style:"font-weight:700;font-size:14px",text:title}),...kids));
+    const small=t=>el("div",{class:"count",style:"margin-top:3px;line-height:1.55",text:t});
+    fb.append(el("div",{style:"font-weight:700;margin-bottom:4px",text:"Instagram／Facebook 收藏"}),
+      el("div",{style:"background:var(--paper);border-radius:10px;padding:9px 11px;font-size:13px;line-height:1.55",
+        text:"Instagram 和 Facebook 沒有開放 App 直接讀取「已儲存」，所以要先跟 Meta 下載一次資料檔，再放進來。這不是 App 壞掉，大家都是這樣做。"}),
+      el("div",{class:"count",style:"margin-top:6px",text:"Jenny 的 Instagram 已經由 Mac 每天早上自動同步，不用做這個。"}));
+    fb.append(step(1,"跟 Meta 申請下載資料檔",
+      el("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"},
+        el("a",{class:"chip",href:"https://accountscenter.instagram.com/info_and_permissions/dyi/",target:"_blank",rel:"noopener",text:"打開 Instagram 下載頁"}),
+        el("a",{class:"chip",href:"https://accountscenter.facebook.com/info_and_permissions/dyi/",target:"_blank",rel:"noopener",text:"打開 Facebook 下載頁"})),
+      small("按「下載或轉移資訊」→ 選你的帳號 →「部分資訊」→ 只勾「已儲存的項目」（Instagram 在「你的 Instagram 動態」底下）→「下載到裝置」→ 日期選「所有時間」、格式選「JSON」→ 建立檔案。")));
+    fb.append(step(2,"等 Meta 通知、把檔案存到手機",
+      small("通常幾分鐘到幾小時，Meta 會寄 email 或在同一頁顯示「可下載」。下載後是一個 .zip 檔，存在「檔案」App 裡就好，不用解壓縮。")));
+    const fileIn=el("input",{type:"file",id:"impFile",accept:".zip,.json,application/zip,application/json",style:"position:absolute;opacity:0;width:1px;height:1px"});
+    const pick=el("label",{class:"btn primary",for:"impFile",style:"display:block;margin-top:8px;cursor:pointer",text:"選擇下載好的檔案"});
+    const fbStatus=el("div",{class:"count",style:"margin-top:6px"}); const fbList=el("div",{class:"list"});
+    fileIn.addEventListener("change",()=>{ if(!fileIn.files[0]) return; pick.textContent="已選："+fileIn.files[0].name; parseExport(fileIn.files[0],fbStatus,fbList); });
+    fb.append(step(3,"放進來、勾要匯入的收藏夾",
+      small("檔案裡只有貼文連結，沒有店名地址；匯入後會出現在各分頁最下面「我的匯入」，想上地圖的可以用 ＋ 補地址。"),
+      fileIn,pick,fbStatus,fbList));
+    body.append(fb);
   });
 }
 
@@ -1259,7 +1277,7 @@ importSection=function(v){
 };
 prune();
 
-const BUILD="20261029204331";
+const BUILD="20261029212528";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
