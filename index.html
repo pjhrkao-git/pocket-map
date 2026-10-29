@@ -1539,7 +1539,7 @@ function v2Buy(v){
 function v2More(v){
   if(V2.mseg!=="rcpt") V2.mseg="tips";
   v.append(segbar([["tips",`旅行攻略 ${TIPS.length}`],["rcpt",`收據記帳${RC.list.length?" "+RC.list.length:""}`]],V2.mseg,k=>{V2.mseg=k;v2save();}));
-  if(V2.mseg==="rcpt"){ viewReceipts(v); return; }
+  if(V2.mseg==="rcpt"){ receiptLink(v); if(RC.list.length){ v.append(el("div",{class:"sec"},el("span",{text:"存在這支手機的舊記錄"}))); viewReceipts(v); } return; }
   const groups=[...new Set(["入境・交通","省錢・好康","行程",...TIPS.map(t=>t[3])])];
   for(const g of groups){ const items=TIPS.filter(t=>t[3]===g); if(!items.length) continue;
     v.append(el("div",{class:"sec"},el("span",{text:g}),el("em",{text:String(items.length)})));
@@ -1833,10 +1833,21 @@ function viewReceipts(v){
     const l=el("div",{class:"list"}); items.forEach(r=>l.append(rRow(r))); v.append(l); }
   v.append(el("button",{class:"linkbtn",type:"button",text:"匯出成 Excel（CSV）",onclick:exportReceipts}));
 }
+
+/* 收據改由 claude.ai 上的「日本旅行收據」頁處理：用 Jenny 自己的 Claude 方案讀照片，記錄存在雲端 */
+const RECEIPT_URL="https://claude.ai/artifact/4o1rAzttx6MVe2caMrYNsh";
+function receiptLink(v){
+  const cam=el("span"); cam.innerHTML=svgI('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l2-3h4l2 3"/><circle cx="12" cy="13.5" r="3.5"/>');
+  v.append(el("div",{class:"hero"},
+    el("div",{class:"big"},el("strong",{style:"font-size:26px;font-family:var(--f-display)",text:"拍收據記帳"})),
+    el("div",{class:"lbl",style:"margin-top:6px;line-height:1.6",text:"Claude 會讀出店名、金額、食衣住行分類，免稅的另外算出離境可退多少稅。用你自己的 Claude 方案，不另外收費。"}),
+    el("div",{class:"rcbtns",style:"grid-template-columns:1fr"},el("a",{class:"btn primary",href:RECEIPT_URL,target:"_blank",rel:"noopener"},cam,el("span",{text:"打開收據記帳"})))));
+  v.append(el("div",{class:"count",style:"margin-top:8px",text:"會在 Claude 裡打開（要登入 claude.ai）。記錄存在雲端，手機、電腦都看得到。"}));
+}
 rLoad().then(()=>{ if(state.tab==="more"&&V2.mseg==="rcpt") rerenderKeep(); });
 loadRate();
 
-const BUILD="20261030112902";
+const BUILD="20261030113614";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
