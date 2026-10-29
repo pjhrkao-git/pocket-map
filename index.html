@@ -1094,6 +1094,48 @@ function openAdd(prefill){
   setTimeout(()=>openAdd(a),300);
 })();
 
+/* --- 每日自動同步：Mac 上的 sync.py 把新的 IG 收藏寫成 sync.json 推到 GitHub，App 開啟時讀進來 --- */
+const SYNC_KEY="pocketmap_sync";
+let SYNC={updated:"",places:[],items:[]};
+const KNOWN_IG=(()=>{ const k=new Set();
+  const grab=s=>{ for(const m of String(s).matchAll(/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]{5,})\//g)) k.add(m[1]); };
+  grab(JSON.stringify([PLACES,RECIPES,TIPS,IMP]));
+  SHOPPING.forEach(s=>(s[2]||[]).forEach(c=>k.add(c)));
+  return k; })();
+const igCode=s=>(String(s).match(/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]{5,})\//)||[])[1];
+function applySync(data){
+  for(let i=PLACES.length-1;i>=0;i--) if(PLACES[i].sync) PLACES.splice(i,1);
+  SYNC={updated:data.updated||"",places:[],items:[]};
+  for(const p of data.places||[]){ const c=igCode(p.ig); if(c&&KNOWN_IG.has(c)) continue; const q={...p,sync:1}; SYNC.places.push(q); PLACES.push(q); }
+  for(const i of data.items||[]){ const c=igCode(i.path); if(c&&KNOWN_IG.has(c)) continue; SYNC.items.push(i); }
+}
+try{ applySync(JSON.parse(localStorage.getItem(SYNC_KEY)||"{}")); }catch(e){}
+(async()=>{
+  try{ const r=await fetch("sync.json?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return;
+    const j=await r.json(); if(!j||!("places" in j)) return;
+    if(j.updated===SYNC.updated) return;
+    try{ localStorage.setItem(SYNC_KEY,JSON.stringify(j)); }catch(e){}
+    applySync(j); render();
+  }catch(e){}
+})();
+// 分頁最下面：自動同步進來、沒有地址的貼文
+const _importedSection=importedSection;
+importedSection=function(v,cat){
+  _importedSection(v,cat);
+  const items=SYNC.items.filter(i=>i.cat===cat); if(!items.length) return;
+  for(const g of [...new Set(items.map(i=>i.group))]){ const rows=items.filter(i=>i.group===g);
+    v.append(el("div",{class:"sec"},el("span",{text:"自動同步 · "+g}),el("em",{text:String(rows.length)})));
+    const l=el("div",{class:"list"}); rows.forEach(i=>l.append(item(i.src,i.path,i.title,i.sub))); v.append(l); }
+};
+const _importSection=importSection;
+importSection=function(v){
+  _importSection(v);
+  const n=SYNC.places.length+SYNC.items.length;
+  const when=SYNC.updated?SYNC.updated.replace("T"," ").slice(0,16):"還沒同步過";
+  v.append(el("div",{class:"sec",text:"自動同步（Mac 每天讀 IG 已儲存）"}),
+    el("div",{class:"set"},el("div",{class:"row"},el("span",{text:`最後更新 ${when}`}),el("span",{class:"count",text:n?`${SYNC.places.length} 個地點、${SYNC.items.length} 則`:"沒有新資料"}))));
+};
+
 render(); startGPS();
 </script>
 
