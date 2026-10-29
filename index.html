@@ -1669,27 +1669,42 @@ async function prepPhoto(f){
 
 /* ---- 自動讀金額：Tesseract（日文＋英文），第一次用才下載 ---- */
 let OCRW=null;
+// 收據是白紙黑字、背景常是彩色：取 RGB 最小值把彩色壓暗，再拉對比
+async function ocrPrep(blob){
+  const bmp=await createImageBitmap(blob), c=document.createElement("canvas"); c.width=bmp.width; c.height=bmp.height;
+  const g=c.getContext("2d"); g.drawImage(bmp,0,0);
+  const d=g.getImageData(0,0,c.width,c.height), p=d.data, hist=new Uint32Array(256);
+  for(let i=0;i<p.length;i+=4){ const v=Math.min(p[i],p[i+1],p[i+2]); p[i]=v; hist[v]++; }
+  const cut=p.length/4*.02; let lo=0, hi=255, n=0;
+  while(lo<255&&n+hist[lo]<cut) n+=hist[lo++]; n=0; while(hi>0&&n+hist[hi]<cut) n+=hist[hi--];
+  const k=255/Math.max(1,hi-lo);
+  for(let i=0;i<p.length;i+=4){ const v=Math.max(0,Math.min(255,(p[i]-lo)*k)); p[i]=p[i+1]=p[i+2]=v; }
+  g.putImageData(d,0,0);
+  return await new Promise(ok=>c.toBlob(ok,"image/png"));
+}
 const loadScript=src=>new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error("載不到辨識程式")); document.head.append(s); });
 async function ocr(blob){
   if(!window.Tesseract) await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js");
   if(!OCRW) OCRW=Tesseract.createWorker(["jpn","eng"]).catch(e=>{ OCRW=null; throw e; });
-  const {data}=await (await OCRW).recognize(blob);
+  const {data}=await (await OCRW).recognize(await ocrPrep(blob));
   return data.text||"";
 }
 function parseReceipt(t){
   const lines=half(t).replace(/[，､]/g,",").replace(/[￥Y](?=\s*\d)/g,"¥").split(/\n/).map(l=>l.replace(/\s+/g,"")).filter(Boolean);
-  const nums=l=>(l.replace(/\d+(?:\.\d+)?%/g,"").match(/\d{1,3}(?:[,.]\d{3})+|\d+/g)||[]).map(s=>+s.replace(/[,.]/g,"")).filter(n=>n>0&&n<1e7);
+  // 金額可能有千分位逗號和小數（1,576.99）；百分比先拿掉
+  const nums=l=>(l.replace(/\d+(?:\.\d+)?%/g,"").match(/\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?/g)||[]).map(s=>+s.replace(/,/g,"")).filter(n=>n>0&&n<1e7);
   const best=(re,skip)=>{ let m=0; for(const l of lines) if(re.test(l)&&!(skip&&skip.test(l))){ const n=nums(l); if(n.length) m=Math.max(m,n[n.length-1]); } return m; };
   let amt=best(/合計|総計|お買上|お買い上げ|ご請求|お支払|領収金額|TOTAL/i,/小計|対象|税抜|点数|預|釣|CHANGE|CASH/i);
   if(!amt) for(const l of lines) if(/¥/.test(l)&&!/預|釣|小計/.test(l)){ const n=nums(l); if(n.length) amt=Math.max(amt,n[n.length-1]); }
-  let tax=0; for(const l of lines) if(/消費税|内税|税額|TAX/i.test(l)&&!/税抜|対象|FREE|REFUND/i.test(l)){ const n=nums(l).filter(n=>!amt||n<=amt*.11); if(n.length) tax=Math.max(tax,n[n.length-1]); }
+  let tax=0; for(const l of lines) if(/消費税|内税|税額|TAX/i.test(l)&&!/税抜|対象|FREE|REFUND|INVOICE|REG/i.test(l)){ const n=nums(l).filter(n=>!amt||n<=amt*.11); if(n.length) tax=Math.max(tax,n[n.length-1]); }
   const all=lines.join(" ");
   const d=all.match(/(20\d{2})[年\/.\-](\d{1,2})[月\/.\-](\d{1,2})/);
   const date=d&&+d[2]>=1&&+d[2]<=12&&+d[3]>=1&&+d[3]<=31?`${d[1]}-${d[2].padStart(2,"0")}-${d[3].padStart(2,"0")}`:"";
-  const cat=/ホテル|HOTEL|宿泊|旅館|INN|ゲストハウス/i.test(all)?"住"
-    :/JR|乗車|駅|運賃|タクシー|TAXI|SUICA|PASMO|切符|新幹線|バス|地下鉄|メトロ/i.test(all)?"行"
-    :/ユニクロ|UNIQLO|GU|衣料|アパレル|ZARA|BEAMS|靴|シューズ/i.test(all)?"衣"
-    :/レストラン|食堂|ラーメン|らーめん|寿司|鮨|カフェ|CAFE|COFFEE|珈琲|喫茶|居酒屋|焼肉|定食|ドリンク|飲食|ファミリーマート|セブン|ローソン|コンビニ/i.test(all)?"食":"";
+  // 辨識雜訊多，只認明確的字；短英文字（JR、GU）要大寫完整單字
+  const cat=/ホテル|HOTEL|宿泊|旅館|ゲストハウス/.test(all)?"住"
+    :/\bJR\b|乗車券|運賃|タクシー|\bTAXI\b|Suica|SUICA|PASMO|新幹線|地下鉄|メトロ/.test(all)?"行"
+    :/ユニクロ|UNIQLO|\bGU\b|衣料|アパレル|ZARA|BEAMS|シューズ/.test(all)?"衣"
+    :/レストラン|食堂|ラーメン|らーめん|寿司|鮨|カフェ|CAFE|COFFEE|珈琲|喫茶|居酒屋|焼肉|定食|ファミリーマート|セブン-イレブン|ローソン/.test(all)?"食":"";
   return {amt, tax, date, cat, tf:/免税|TAX\s*FREE|TAXFREE|TAX\s*REFUND|輸出物品/i.test(all), tr:/8%|8％|軽減/.test(all)&&!/10%|10％/.test(all)?8:10};
 }
 
@@ -1821,7 +1836,7 @@ function viewReceipts(v){
 rLoad().then(()=>{ if(state.tab==="more"&&V2.mseg==="rcpt") rerenderKeep(); });
 loadRate();
 
-const BUILD="20261030111824";
+const BUILD="20261030112902";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
