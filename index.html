@@ -1102,7 +1102,7 @@ function openAdd(prefill){
 
 /* --- 每日自動同步：Mac 上的 sync.py 把新的 IG 收藏寫成 sync.json 推到 GitHub，App 開啟時讀進來 --- */
 const SYNC_KEY="pocketmap_sync";
-let SYNC={updated:"",places:[],items:[]};
+let SYNC={updated:"",places:[],items:[],removed:[]};
 const KNOWN_IG=(()=>{ const k=new Set();
   const grab=s=>{ for(const m of String(s).matchAll(/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]{5,})\//g)) k.add(m[1]); };
   grab(JSON.stringify([PLACES,RECIPES,TIPS,IMP]));
@@ -1111,7 +1111,7 @@ const KNOWN_IG=(()=>{ const k=new Set();
 const igCode=s=>(String(s).match(/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]{5,})\//)||[])[1];
 function applySync(data){
   for(let i=PLACES.length-1;i>=0;i--) if(PLACES[i].sync) PLACES.splice(i,1);
-  SYNC={updated:data.updated||"",places:[],items:[]};
+  SYNC={updated:data.updated||"",places:[],items:[],removed:data.removed||[]};
   for(const p of data.places||[]){ const c=igCode(p.ig); if(c&&KNOWN_IG.has(c)) continue; const q={...p,sync:1}; SYNC.places.push(q); PLACES.push(q); }
   for(const i of data.items||[]){ const c=igCode(i.path); if(c&&KNOWN_IG.has(c)) continue; SYNC.items.push(i); }
 }
@@ -1121,7 +1121,7 @@ try{ applySync(JSON.parse(localStorage.getItem(SYNC_KEY)||"{}")); }catch(e){}
     const j=await r.json(); if(!j||!("places" in j)) return;
     if(j.updated===SYNC.updated) return;
     try{ localStorage.setItem(SYNC_KEY,JSON.stringify(j)); }catch(e){}
-    applySync(j); render();
+    applySync(j); prune(); render();
   }catch(e){}
 })();
 // 分頁最下面：自動同步進來、沒有地址的貼文
@@ -1216,7 +1216,50 @@ function viewMapReal(v){
   setTimeout(()=>MAPV.map.invalidateSize(),0);
 }
 
-const BUILD="20261029203318";
+/* --- 拿掉不要的：(1) Mac 每天同步時發現 IG 取消收藏 → sync.json 的 removed 清單；(2) 自己按「從 App 隱藏」→ 存在這支手機
+       兩種都只是藏起來：重新收藏或在設定按「全部恢復」就會回來 --- */
+const HIDE_KEY="pocketmap_hidden";
+let HIDDEN=new Set(); try{ HIDDEN=new Set(JSON.parse(localStorage.getItem(HIDE_KEY)||"[]")); }catch(e){}
+const placeKey = p => (p.ig||"")+"|"+p.n;
+const listKey = (s,path) => url(s,path);
+function prune(){
+  const gone=new Set(SYNC.removed||[]);
+  const igGone = (s,path) => s==="ig" && gone.has(igCode(url(s,path)));
+  const drop = (arr,test) => { let n=0; for(let i=arr.length-1;i>=0;i--) if(test(arr[i])){ arr.splice(i,1); n++; } return n; };
+  let r=0, h=0;
+  r+=drop(PLACES,p=>{ const c=igCode(p.ig||""); return /instagram\.com/.test(p.ig||"") && c && gone.has(c); });
+  h+=drop(PLACES,p=>HIDDEN.has(placeKey(p)));
+  for(const arr of [RECIPES,TIPS,SHOPS]){ r+=drop(arr,t=>igGone(t[0],t[1])); h+=drop(arr,t=>HIDDEN.has(listKey(t[0],t[1]))); }
+  for(const s of SHOPPING){ const before=s[2].length; s[2]=s[2].filter(c=>!gone.has(c)); if(before&&!s[2].length) s.__gone=1; }
+  r+=drop(SHOPPING,s=>s.__gone); h+=drop(SHOPPING,s=>HIDDEN.has(listKey("ig","p/"+s[2][0]+"/")));
+  r+=drop(IMP.items,i=>igGone(i.src,i.path)); h+=drop(IMP.items,i=>HIDDEN.has(listKey(i.src,i.path)));
+  r+=drop(SYNC.items,i=>igGone(i.src,i.path)); h+=drop(SYNC.items,i=>HIDDEN.has(listKey(i.src,i.path)));
+  h+=drop(YTFOOD,y=>HIDDEN.has(listKey("yt",y[0])));
+  return [r,h];
+}
+function hideOne(key,name){
+  if(!confirm(`把「${name}」從 App 隱藏？\n（之後可以在設定 → 全部恢復）`)) return;
+  HIDDEN.add(key); try{ localStorage.setItem(HIDE_KEY,JSON.stringify([...HIDDEN])); }catch(e){}
+  prune(); closeSheet(); render();
+  document.getElementById("bh").textContent="已隱藏"; document.getElementById("bb").textContent=name+"　（設定 → 全部恢復）";
+  const b=document.getElementById("banner"); b.classList.add("show"); clearTimeout(bTimer); bTimer=setTimeout(()=>b.classList.remove("show"),4000);
+}
+const hideChip = (key,name) => el("button",{class:"chip",type:"button",style:"margin-top:10px;color:var(--muted)",text:"從 App 隱藏",onclick:()=>hideOne(key,name)});
+const _openPlace=openPlace;  openPlace=function(p){ _openPlace(p); sheet.append(hideChip(placeKey(p),p.n)); };
+const _openLink=openLink;    openLink=function(s,path,title,sub){ _openLink(s,path,title,sub); sheet.append(hideChip(listKey(s,path),title)); };
+const _openVideoShops=openVideoShops; openVideoShops=function(id,title,ch){ _openVideoShops(id,title,ch); sheet.append(hideChip(listKey("yt",id),title)); };
+const _importSection2=importSection;
+importSection=function(v){
+  _importSection2(v);
+  const box=el("div",{class:"set"});
+  box.append(el("div",{class:"row"},el("span",{text:`IG 取消收藏、已自動拿掉 ${(SYNC.removed||[]).length} 則`})));
+  box.append(el("div",{class:"row"},el("span",{text:`自己隱藏的 ${HIDDEN.size} 則`}),
+    HIDDEN.size?el("button",{class:"chip",type:"button",text:"全部恢復",onclick:()=>{ try{ localStorage.removeItem(HIDE_KEY); }catch(e){} location.reload(); }}):el("span")));
+  v.append(el("div",{class:"sec",text:"拿掉的項目"}),box);
+};
+prune();
+
+const BUILD="20261029204331";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
