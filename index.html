@@ -896,12 +896,31 @@ function openImport(){
 /* --- YouTube: whole-page redirect to Google and back (popups fail in iPhone home-screen apps) --- */
 let ytToken=null;
 try{ const t=JSON.parse(sessionStorage.getItem("yt_token")||"null"); if(t&&t.exp>Date.now()) ytToken=t.token; }catch(e){}
-function ytLogin(status,list,btn){
-  if(ytToken){ ytPlaylists(status,list,btn); return; }
+function ytLogin(status,list,btn,force){
+  if(ytToken&&!force){ ytPlaylists(status,list,btn); return; }
+  ytToken=null; try{ sessionStorage.removeItem("yt_token"); }catch(e){}
   const u=new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  // "consent" makes Google ask again which account and which YouTube channel (brand channels included)
   Object.entries({client_id:GOOGLE_CLIENT_ID,redirect_uri:location.origin+location.pathname,response_type:"token",
-    scope:"https://www.googleapis.com/auth/youtube.readonly",include_granted_scopes:"true",state:"yt",prompt:"select_account"}).forEach(([k,v])=>u.searchParams.set(k,v));
+    scope:"https://www.googleapis.com/auth/youtube.readonly",include_granted_scopes:"true",state:"yt",prompt:"select_account consent"}).forEach(([k,v])=>u.searchParams.set(k,v));
   status.textContent="前往 Google 登入…"; location.assign(u);
+}
+function ytSwitchBtn(status,list,btn){
+  return el("button",{class:"chip",type:"button",text:"換帳號／頻道",onclick:()=>ytLogin(status,list,btn,true)});
+}
+// a playlist link (any account, unlisted or public) → import it directly
+function ytPasteBox(status,list,btn){
+  const inp=el("input",{class:"search",type:"url",id:"ytLink",placeholder:"或貼上播放清單連結（youtube.com/playlist?list=…）","aria-label":"播放清單連結"});
+  const go=el("button",{class:"chip",type:"button",text:"讀取連結",onclick:async()=>{
+    const id=(inp.value.match(/[?&]list=([A-Za-z0-9_-]+)/)||[])[1];
+    if(!id){ status.textContent="連結裡找不到 list=，請貼播放清單的分享連結。"; return; }
+    if(!ytToken){ status.textContent="先按上面的「登入 Google」，登入後再貼連結。"; return; }
+    try{ const j=await ytGet("playlists",{part:"snippet,contentDetails,status",id,maxResults:1});
+      if(!j.items?.length){ status.textContent="讀不到這個清單。如果是「私人」，請改成「不公開」再試。"; return; }
+      await ytImport(j.items,status,go);
+    }catch(e){ status.textContent="讀取失敗："+e.message; }
+  }});
+  return el("div",{style:"display:flex;gap:8px;align-items:center;margin-top:6px"},inp,go);
 }
 // back from Google: #access_token=...&state=yt
 (function(){
@@ -921,21 +940,30 @@ async function ytGet(path,params){
 async function ytPlaylists(status,list,btn){
   status.textContent="讀取播放清單…"; list.textContent="";
   try{
+    const ch=await ytGet("channels",{part:"snippet",mine:"true"});
+    const c=ch.items?.[0]?.snippet; const who=c?`${c.title}${c.customUrl?"（"+c.customUrl+"）":""}`:"（這個 Google 帳號沒有 YouTube 頻道）";
+    btn.hidden=true;
+    list.append(el("div",{class:"item",style:"cursor:default"},el("div",{style:"min-width:0"},el("div",{class:"sub",text:"目前登入的頻道"}),el("div",{class:"nm",text:who})),ytSwitchBtn(status,list,btn)));
+    list.append(ytPasteBox(status,list,btn));
     const pls=[]; let pageToken="";
-    do{ const j=await ytGet("playlists",{part:"snippet,contentDetails",mine:"true",maxResults:50,pageToken}); pls.push(...j.items); pageToken=j.nextPageToken||""; }while(pageToken);
-    if(!pls.length){ status.textContent="這個帳號沒有播放清單。"; return; }
-    btn.hidden=true; status.textContent=`${pls.length} 個清單，勾選後按匯入：`;
+    do{ const j=await ytGet("playlists",{part:"snippet,contentDetails,status",mine:"true",maxResults:50,pageToken}); pls.push(...(j.items||[])); pageToken=j.nextPageToken||""; }while(pageToken);
+    if(!pls.length){ status.textContent=`「${who}」沒有自建的播放清單（「稍後觀看」「喜歡的影片」不算）。清單如果在別的帳號或品牌頻道，按「換帳號／頻道」；或在下面貼清單連結。`; return; }
+    status.textContent=`${pls.length} 個清單，勾選後按匯入：`;
     const boxes=[];
     for(const p of pls){ const cb=el("input",{type:"checkbox",id:"pl_"+p.id}); boxes.push([cb,p]);
       list.append(el("label",{class:"item",for:"pl_"+p.id,style:"cursor:pointer"},el("div",{},el("div",{class:"nm",text:p.snippet.title}),el("div",{class:"sub",text:`${p.contentDetails.itemCount} 部 · ${p.status?.privacyStatus||""}`})),cb)); }
     const go=el("button",{class:"btn primary",type:"button",text:"匯入勾選的清單"});
     go.onclick=()=>ytImport(boxes.filter(([cb])=>cb.checked).map(([,p])=>p),status,go);
     list.append(go);
-  }catch(e){ status.textContent="讀取失敗："+e.message; }
+  }catch(e){
+    if(/401/.test(e.message)){ ytToken=null; try{ sessionStorage.removeItem("yt_token"); }catch(_){} btn.hidden=false; status.textContent="登入過期了，請再按一次「登入 Google」。"; }
+    else status.textContent="讀取失敗："+e.message;
+  }
 }
 async function ytImport(pls,status,go){
   if(!pls.length){ status.textContent="先勾選至少一個清單。"; return; }
   go.disabled=true; let nPlace=0,nItem=0,nDup=0;
+  try{
   for(const p of pls){
     let pageToken="",vids=[];
     do{ const j=await ytGet("playlistItems",{part:"snippet",playlistId:p.id,maxResults:50,pageToken}); vids.push(...j.items); pageToken=j.nextPageToken||""; }while(pageToken);
@@ -948,6 +976,7 @@ async function ytImport(pls,status,go){
       if(r==="place")nPlace++; else if(r==="item")nItem++; else nDup++;
     }
   }
+  }catch(e){ impSave(); render(); status.textContent=`匯入到一半出錯（${e.message}），已存下 ${nPlace+nItem} 則，可以再按一次匯入繼續。`; go.disabled=false; return; }
   impSave(); render();
   status.textContent=`完成：${nPlace} 個上了地圖、${nItem} 則加進清單${nDup?`、${nDup} 則本來就有`:""}。沒有地址的影片在各分頁最下面「我的匯入」。`;
   go.disabled=false;
