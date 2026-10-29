@@ -81,7 +81,7 @@ button:focus-visible,.card:focus-visible,a:focus-visible{outline:2px solid var(-
 .sec em{font-style:normal;color:var(--muted);font-family:var(--f-num);font-size:12px}
 
 .mapbox{background:var(--sheet);border-radius:18px;overflow:hidden}
-.mapbox svg{display:block;width:100%;height:auto}
+.mapbox>svg{display:block;width:100%;height:auto}
 .maplegend{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:8px 12px}
 
 .set{background:var(--sheet);border-radius:14px;padding:4px 14px;margin-bottom:12px}
@@ -1185,7 +1185,7 @@ function openVideoShops(id, title, ch){
   });
 }
 
-/* --- 地圖分頁：真的街道底圖（Leaflet + CARTO Voyager，類似 Google 地圖的配色；店名路名用當地語言）
+/* --- 地圖分頁：真的街道底圖（Leaflet + OpenStreetMap，日本的店名路名是日文）
        地圖只建一次：GPS 每幾秒重畫畫面時只更新圖釘和藍點，不會把你拖過、放大過的地圖拉回去 --- */
 const MAPV = { box:null, map:null, layer:null, centeredAt:null };
 const pinIcon = color => L.divIcon({ className:"pm-pin", iconSize:[26,34], iconAnchor:[13,33],
@@ -1199,8 +1199,8 @@ function viewMapReal(v){
       el("div",{class:"maplegend"}, MAPV.legend,
         el("button",{class:"chip",type:"button",text:"回到我的位置",onclick:()=>{ const [,a2,o2]=here(); MAPV.map.setView([a2,o2],16); }})));
     MAPV.map=L.map(mapEl,{zoomControl:false,attributionControl:true}).setView([a,o],16);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      {maxZoom:19, subdomains:"abcd", attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'}).addTo(MAPV.map);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(MAPV.map);
+    MAPV.map.attributionControl.setPrefix(false);
     L.control.zoom({position:"bottomright"}).addTo(MAPV.map);
     MAPV.layer=L.layerGroup().addTo(MAPV.map); MAPV.centeredAt=[a,o];
   }
@@ -1216,7 +1216,7 @@ function viewMapReal(v){
   setTimeout(()=>MAPV.map.invalidateSize(),0);
 }
 
-const BUILD="20261029202617";
+const BUILD="20261029202814";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
