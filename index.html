@@ -1,0 +1,807 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>日本口袋地圖</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="口袋地圖">
+<meta name="theme-color" content="#2b3a67">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: desktop = notes column + phone frame; phone width = the app fills the screen */
+:root{
+  --paper:#eef1f2; --sheet:#ffffff; --ink:#1d2433; --muted:#5d6676; --line:#d7dce1; --indigo:#2b3a67; --indigo-soft:#e3e8f4;
+  --c-coffee:#7a4b2a; --c-food:#b0283c; --c-buy:#7b3fa8; --c-photo:#2563c9; --c-go:#3f7f3a;
+  --frame:#1d2433; --banner:rgba(250,251,252,.94); --shadow:0 18px 50px rgba(29,36,51,.18);
+  --f-display:"Zen Maru Gothic","Noto Sans TC",system-ui,sans-serif;
+  --f-body:"Noto Sans TC",system-ui,-apple-system,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#12161d; --sheet:#1b212b; --ink:#e8ecf2; --muted:#9aa4b3; --line:#2c3441; --indigo:#9fb2e8; --indigo-soft:#232d45;
+  --c-coffee:#c08a62; --c-food:#ef6b7d; --c-buy:#b98ae0; --c-photo:#6ea1f2; --c-go:#7fbf75;
+  --frame:#000; --banner:rgba(40,46,58,.95); --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#12161d; --sheet:#1b212b; --ink:#e8ecf2; --muted:#9aa4b3; --line:#2c3441; --indigo:#9fb2e8; --indigo-soft:#232d45;
+  --c-coffee:#c08a62; --c-food:#ef6b7d; --c-buy:#b98ae0; --c-photo:#6ea1f2; --c-go:#7fbf75;
+  --frame:#000; --banner:rgba(40,46,58,.95); --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-block:40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:56px;align-items:start}
+.notes{min-width:0;padding-top:24px}
+.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+h1{font-family:var(--f-display);font-size:40px;line-height:1.15;margin:8px 0 16px;text-wrap:balance}
+.notes p{max-width:34em;color:var(--muted);margin:0 0 14px}
+.notes h2{font-family:var(--f-display);font-size:17px;margin:28px 0 10px}
+.feat{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.feat li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.feat b{display:block;color:var(--ink);font-weight:700}
+.feat span{color:var(--muted);font-size:14px}
+.ico{width:28px;height:28px;border-radius:8px;background:var(--indigo-soft);color:var(--indigo);display:grid;place-items:center;font-family:var(--f-num);font-size:13px}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:3px 10px;border-radius:99px;background:var(--sheet);border:1px solid var(--line)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--cc)}
+.honest{margin-top:22px;padding:14px 16px;border-left:3px solid var(--indigo);background:var(--sheet);border-radius:0 10px 10px 0;font-size:14px;color:var(--muted)}
+
+/* phone */
+.phone{position:sticky;top:24px;width:390px;height:780px;border-radius:52px;background:var(--frame);padding:12px;box-shadow:var(--shadow)}
+.screen{position:relative;height:100%;border-radius:40px;overflow:hidden;background:var(--paper);display:flex;flex-direction:column}
+.status{display:flex;justify-content:space-between;padding:14px 28px 4px;font-family:var(--f-num);font-size:13px;font-weight:500}
+.top{padding:6px 18px 10px;display:flex;flex-direction:column;gap:10px}
+.top h3{font-family:var(--f-display);font-size:24px;margin:0}
+.locbtn{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:14px;padding:9px 12px;font:inherit;font-size:14px;cursor:pointer;text-align:left}
+.locbtn .pulse{width:10px;height:10px;border-radius:50%;background:#2f7cf6;box-shadow:0 0 0 4px rgba(47,124,246,.22);flex:none}
+.locbtn small{margin-left:auto;color:var(--muted);font-size:12px}
+.body{flex:1;overflow-y:auto;padding:0 18px 16px;min-height:0}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--sheet);padding:8px 6px 22px}
+.tabs button{border:0;background:none;color:var(--muted);font:inherit;font-size:11px;display:grid;justify-items:center;gap:3px;padding:4px;cursor:pointer;border-radius:10px}
+.tabs button svg{width:22px;height:22px}
+.tabs button[aria-selected="true"]{color:var(--indigo);font-weight:700}
+button:focus-visible,.card:focus-visible,a:focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+
+.ring{display:flex;align-items:baseline;gap:10px;padding:12px 14px;background:var(--indigo);color:var(--sheet);border-radius:16px;margin-bottom:12px}
+.ring strong{font-family:var(--f-num);font-size:30px;line-height:1}
+.ring span{font-size:13px;opacity:.9}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin:0 -2px}
+.chip{flex:none;border:1px solid var(--line);background:var(--sheet);color:var(--ink);font:inherit;font-size:12.5px;padding:5px 11px;border-radius:99px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.list{display:grid;gap:8px}
+.card{display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--sheet);border-radius:14px;padding:11px 12px 11px 0;cursor:pointer;border:0;color:inherit;font:inherit;text-align:left;width:100%;overflow:hidden}
+.card .bar{align-self:stretch;background:var(--cc);border-radius:0 3px 3px 0}
+.card .nm{font-weight:700;font-size:14.5px;line-height:1.35}
+.card .nt{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .walk{text-align:right;font-family:var(--f-num);font-size:12px;color:var(--muted);line-height:1.3}
+.card .walk b{display:block;font-size:17px;color:var(--ink)}
+.empty{padding:26px 10px;text-align:center;color:var(--muted);font-size:14px}
+.sec{font-family:var(--f-display);font-size:15px;margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.sec em{font-style:normal;color:var(--muted);font-family:var(--f-num);font-size:12px}
+
+.mapbox{background:var(--sheet);border-radius:18px;overflow:hidden}
+.mapbox svg{display:block;width:100%;height:auto}
+.maplegend{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:8px 12px}
+
+.set{background:var(--sheet);border-radius:14px;padding:4px 14px;margin-bottom:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:0}
+.seg{display:flex;background:var(--paper);border-radius:10px;padding:2px}
+.seg button{border:0;background:none;font:inherit;font-size:12.5px;padding:5px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.sw{position:relative;width:46px;height:28px;border-radius:99px;border:0;background:var(--line);cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+.sw[aria-checked="true"]{background:#34c759}
+.sw[aria-checked="true"]::after{transform:translateX(18px)}
+
+.banner{position:absolute;left:10px;right:10px;top:44px;z-index:5;background:var(--banner);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:20px;padding:11px 13px;box-shadow:0 8px 30px rgba(0,0,0,.18);display:grid;grid-template-columns:38px 1fr;gap:10px;cursor:pointer;transform:translateY(-140%);transition:transform .45s cubic-bezier(.2,.9,.3,1.2);border:0;font:inherit;color:inherit;text-align:left}
+.banner.show{transform:none}
+.appicon{width:38px;height:38px;border-radius:10px;background:var(--indigo);display:grid;place-items:center}
+.banner .bt{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.banner .bh{font-weight:700;font-size:14px}
+.banner .bb{font-size:13px;line-height:1.4}
+
+.scrim{position:absolute;inset:0;background:rgba(10,14,22,.35);z-index:6;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:7;background:var(--sheet);border-radius:24px 24px 0 0;padding:10px 18px 26px;transform:translateY(105%);transition:transform .3s ease}
+.sheet.on{transform:none}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 12px}
+.sheet h4{font-family:var(--f-display);font-size:20px;margin:6px 0 4px}
+.sheet .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:10px}
+.sheet p{margin:0 0 14px;font-size:14px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{display:block;text-align:center;padding:11px;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;border:0;cursor:pointer;font-family:inherit}
+.btn.primary{background:var(--indigo);color:var(--sheet)}
+.btn.ghost{background:var(--paper);color:var(--ink)}
+.preset{display:grid;gap:6px;max-height:330px;overflow:auto}
+.preset button{display:flex;justify-content:space-between;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:14px;padding:10px 12px;border-radius:12px;cursor:pointer}
+.preset button span{color:var(--muted);font-size:12px}
+
+.titlerow{display:flex;align-items:center;justify-content:space-between}
+.gear{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--sheet);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.gear svg{width:18px;height:18px}
+.segbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--line);border-radius:12px;padding:3px;margin-bottom:10px}
+.segbar button{border:0;background:none;font:inherit;font-size:13px;padding:7px 4px;border-radius:9px;color:var(--muted);cursor:pointer}
+.segbar button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.search{width:100%;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:12px;padding:9px 12px;font:inherit;font-size:14px;margin-bottom:8px}
+.src{flex:none;font-family:var(--f-num);font-size:10px;font-weight:500;letter-spacing:.04em;padding:2px 6px;border-radius:6px;color:#fff}
+.src.ig{background:#c13584}.src.fb{background:#1877f2}.src.yt{background:#e62117}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--sheet);border-radius:12px;padding:10px 12px;border:0;color:inherit;font:inherit;text-align:left;width:100%;cursor:pointer}
+.item .nm{font-weight:700;font-size:14px;line-height:1.35}
+.item .sub{color:var(--muted);font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px}
+.count{color:var(--muted);font-size:12px;margin:2px 0 8px}
+.fab{position:absolute;right:14px;bottom:92px;z-index:4;display:flex;align-items:center;gap:7px;border:0;border-radius:99px;padding:10px 15px 10px 12px;background:var(--ink);color:var(--sheet);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.fab svg{width:18px;height:18px}
+.sheet.tall{top:46px;display:flex;flex-direction:column;padding-bottom:16px}
+.chatlog{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 0 10px}
+.msg{max-width:88%;padding:9px 12px;border-radius:16px;font-size:14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:var(--indigo);color:var(--sheet);border-bottom-right-radius:5px}
+.msg.ai{align-self:flex-start;background:var(--paper);border-bottom-left-radius:5px}
+.msg.ai.wait{color:var(--muted)}
+.msg .ref{display:inline;border:0;padding:0 3px;margin:0 1px;border-radius:5px;background:var(--indigo-soft);color:var(--indigo);font:inherit;font-weight:700;cursor:pointer}
+.msg .note{display:block;margin-top:6px;font-size:12px;color:var(--muted)}
+.sugg{display:flex;flex-wrap:wrap;gap:6px}
+.sugg button{border:1px solid var(--line);background:var(--sheet);color:var(--ink);font:inherit;font-size:12.5px;padding:6px 10px;border-radius:12px;cursor:pointer;text-align:left}
+.composer{display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--line)}
+.composer textarea{flex:1;min-width:0;resize:none;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:14px;padding:9px 12px;font:inherit;font-size:14px;height:42px}
+.composer button{flex:none;border:0;border-radius:14px;padding:0 14px;font:inherit;font-weight:700;cursor:pointer;background:var(--indigo);color:var(--sheet)}
+.composer button.stop{background:var(--line);color:var(--ink)}
+.chathead{display:flex;justify-content:space-between;align-items:center}
+.chathead small{color:var(--muted);font-size:12px}
+html,body{height:100%;margin:0}[hidden]{display:none!important}
+.wrap{display:block;max-width:none;padding:0;height:100%}.notes{display:none}
+.phone{position:fixed;inset:0;width:auto;height:auto;max-width:none;margin:0;border-radius:0;padding:0;background:none;box-shadow:none}
+.screen{border-radius:0;border:0}.status{display:none}
+.top{padding-top:calc(10px + env(safe-area-inset-top,0px))}.tabs{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.banner{top:calc(10px + env(safe-area-inset-top,0px))}.fab{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+.sheet{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+@media (max-width:860px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:28px;padding-block:20px}
+  .phone{position:relative;top:0;width:100%;max-width:390px;height:740px;margin:0 auto;order:-1}
+  h1{font-size:30px}
+}
+@media (max-width:430px){
+  .phone{border-radius:0;padding:0;background:none;box-shadow:none;height:calc(100vh - 40px);min-height:620px}
+  .screen{border-radius:20px;border:1px solid var(--line)}
+}
+@media (prefers-reduced-motion:reduce){.banner,.sheet,.sw::after,.scrim{transition:none}}
+</style>
+
+<div class="wrap">
+  <section class="notes">
+    <div class="eyebrow">設計稿 · 可點擊</div>
+    <h1>日本口袋地圖</h1>
+    <p>只收旅行、美食和購物。你在 Instagram、Facebook 和 YouTube 存的日本地點、必買清單、食譜、台灣美食店家和旅行攻略，全部整理在一個 App 裡。走到收藏的店家或景點附近 10 分鐘內，就跳通知提醒你。</p>
+    <p>右邊的手機可以直接點。上方的「目前位置」是模擬的，換一個地點就能看到提醒怎麼跳出來。</p>
+
+    <h2>五個分頁</h2>
+    <ul class="feat">
+      <li><div class="ico">1</div><div><b>附近</b><span>步行範圍內的日本地點，最近的排最前面，顯示要走幾分鐘。</span></div></li>
+      <li><div class="ico">2</div><div><b>地圖</b><span>以你為中心，虛線圈是步行範圍，圖釘顏色對應分類。</span></div></li>
+      <li><div class="ico">3</div><div><b>美食</b><span><span id="nRec"></span> 則食譜（可搜尋、按食材篩選）、日本餐廳、台灣美食店家。</span></div></li>
+      <li><div class="ico">4</div><div><b>購物</b><span>日本必買 <span id="nBuy"></span> 項（藥妝、髮品、無印／3COINS、食品、廚房）和必逛好店，可搜尋；有實體店的會標「地圖上」，走近會提醒。</span></div></li>
+      <li><div class="ico">5</div><div><b>旅行</b><span>拍照景點，加上入境交通、省錢好康、行程、韓國等 <span id="nTip"></span> 則攻略。</span></div></li>
+    </ul>
+    <p style="margin-top:12px">右上角的齒輪是設定：提醒範圍 5／10／15 分鐘、要提醒哪幾類。</p>
+    <h2>問 Claude</h2>
+    <p>右下角的「問 Claude」可以用你的收藏回答問題，例如「我現在附近有什麼好吃的？」「不用烤箱的甜點有哪些？」。回答裡提到的店、食譜、商品可以直接點開。第一次使用會請你允許，用的是你自己的 Claude 用量。</p>
+
+    <h2>地圖上的五個分類</h2>
+    <div class="legend" id="legend"></div>
+
+    <div class="honest">這是設計稿：位置是模擬的，不會真的定位或推播。資料是 2026-10-29 從 Instagram（@cardiganz）、Facebook 已儲存和 YouTube 播放清單「日本」（@cardi7259）整理出來的；健身等跟旅行、美食、購物無關的收藏沒有放進來。</div>
+  </section>
+
+  <div class="phone" aria-label="App 設計稿">
+    <div class="screen" id="screen">
+      <div class="status"><span>11:46</span><span>5G ▮▮▮</span></div>
+      <button class="banner" id="banner" type="button" aria-live="polite">
+        <div class="appicon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg></div>
+        <div><div class="bt"><span>日本口袋地圖</span><span>現在</span></div><div class="bh" id="bh"></div><div class="bb" id="bb"></div></div>
+      </button>
+
+      <div class="top">
+        <div class="titlerow"><h3 id="title">附近</h3><button class="gear" id="gear" type="button" aria-label="設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
+        <button class="locbtn" id="locbtn" type="button"><span class="pulse"></span><span>目前位置：<b id="locname"></b></span><small id="locmode">模擬 ▾</small></button>
+      </div>
+      <div class="body" id="view"></div>
+      <button class="fab" id="fab" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>問 Claude</button>
+      <nav class="tabs" role="tablist" id="tabs"></nav>
+
+      <div class="scrim" id="scrim"></div>
+      <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PLACES = [{"c":"日本必吃","n":"五代目 花山うどん 銀座店","t":"寬麵烏龍；銀座3-14-13","a":35.6698,"o":139.769,"ig":"https://www.instagram.com/p/DcOlrZztUA4/"},{"c":"日本必吃","n":"五代目 花山うどん 日本橋店","t":"比銀座好排；日本橋2-10-12","a":35.68113,"o":139.774656,"ig":"https://www.instagram.com/p/Dbk_nyssK1W/"},{"c":"日本必吃","n":"カレー専門店 円山教授（札幌）","t":"北海道最好吃咖哩","a":43.05354,"o":141.32609,"ig":"https://www.instagram.com/p/DZ99kIwP4Iz/"},{"c":"日本必吃","n":"蟹座 KANIZA（札幌すすきの）","t":"螃蟹/寶冠蟹吃到飽；南4条西2-10-1 9F","a":43.0552,"o":141.354,"ig":"https://www.instagram.com/p/DcNTglQSyS8/"},{"c":"日本必吃","n":"Un délice 布丁大福（小樽）","t":"每日限量；小樽運河附近","a":43.196,"o":140.9985,"ig":"https://www.instagram.com/p/DV3B8PbEtfX/"},{"c":"日本必吃","n":"回転寿司 根室花まる 銀座","t":"迴轉壽司 TOP1；排隊30–120分","a":35.672,"o":139.763,"ig":"https://www.instagram.com/p/DbYA5iLz_32/"},{"c":"日本必吃","n":"回転寿司 トリトン 東京ソラマチ","t":"迴轉壽司 TOP2","a":35.7101,"o":139.8107,"ig":"https://www.instagram.com/p/DbYA5iLz_32/"},{"c":"日本必吃","n":"活美登利 西武渋谷","t":"迴轉壽司 TOP4；CP值高","a":35.66,"o":139.7005,"ig":"https://www.instagram.com/p/DbYA5iLz_32/"},{"c":"日本必吃","n":"魚べい 渋谷道玄坂店","t":"迴轉壽司 TOP5；高速列車送餐","a":35.6585,"o":139.698,"ig":"https://www.instagram.com/p/DbYA5iLz_32/"},{"c":"日本必吃","n":"函太郎 東京駅","t":"迴轉壽司 TOP6；函館直送","a":35.6812,"o":139.7671,"ig":"https://www.instagram.com/p/DbYA5iLz_32/"},{"c":"日本必吃","n":"沼津港 新宿本店","t":"迴轉壽司 TOP7","a":35.6915,"o":139.7005,"ig":"https://www.instagram.com/p/DbYA5iLz_32/"},{"c":"日本必吃","n":"立喰鮨 ひろや（芝大門）","t":"要預約；芝大門1-4-4","a":35.6575,"o":139.7535,"ig":"https://www.instagram.com/p/DXx-APwPDoP/"},{"c":"日本必吃","n":"渋谷 爆紅蛋包飯","t":"宇田川町26-5 育真ビル B1","a":35.6615,"o":139.6975,"ig":"https://www.instagram.com/p/DYmpqxbtxtc/"},{"c":"日本必吃","n":"銀座 包廂燒肉（衣服不臭）","t":"銀座7-10-8 第五太陽ビル302","a":35.669,"o":139.7615,"ig":"https://www.instagram.com/p/DSNPIFRk2OI/"},{"c":"日本必吃","n":"山麓園（河口湖）","t":"炭火燒；河口湖","a":35.516,"o":138.7625,"ig":"https://www.instagram.com/p/DaLgoVMyPV7/"},{"c":"日本必吃","n":"きちきちオムライス（京都）","t":"全世界最難預約蛋包飯","a":35.0065,"o":135.7705,"ig":"https://www.instagram.com/p/DZp5xlNh0jN/"},{"c":"日本必買","n":"Ajo Base アホベイス 北千住","t":"大蒜鹽麴、竹炭蒜包子；11:00–19:00","a":35.751,"o":139.803,"ig":"https://www.instagram.com/p/DYzDLplT0-5/"},{"c":"日本必買","n":"茶の池田屋 新宿（抹茶）","t":"10:00–21:00；西新宿1-1 B1","a":35.6905,"o":139.6995,"ig":"https://www.instagram.com/p/DXbRiSak_fj/"},{"c":"日本必買","n":"@cosme TOKYO 原宿","t":"原宿站對面，美妝一次買齊","a":35.670164,"o":139.703133,"ig":"https://www.instagram.com/p/DaktmhHBhLN/"},{"c":"日本必買","n":"BEAMS JAPAN 新宿","t":"日本文化紀念品 1–7F","a":35.6904,"o":139.7022,"ig":"https://www.instagram.com/p/DZUd2EthF4d/"},{"c":"日本必買","n":"JINS 新宿（全球最大旗艦店）","t":"免稅、30分取眼鏡","a":35.6915,"o":139.701,"ig":"https://www.instagram.com/p/DYUYec-RCEQ/"},{"c":"日本必買","n":"だし尾粂 麻布台ヒルズ（客製高湯包）","t":"150年老店；高湯體驗要線上預約","a":35.66129,"o":139.74117,"ig":"https://www.instagram.com/p/Dap00-nTffb/"},{"c":"日本必買","n":"富士山五合目郵局（紀念品）","t":"客製富士山硬幣、木板明信片","a":35.3955,"o":138.733,"ig":"https://www.instagram.com/p/Dbuu0TGS9bo/"},{"c":"日本必逛","n":"BEAMS JAPAN 淺草寺快閃店","t":"本堂西側；至 2027/2/28","a":35.71474,"o":139.79541,"ig":"https://www.instagram.com/p/De_40kMvjyk/"},{"c":"日本必逛","n":"Google Store 表參道","t":"美國以外首間","a":35.6651,"o":139.7126,"ig":"https://www.instagram.com/p/DcSyDm4SWUH/"},{"c":"日本必逛","n":"多慶屋（上野）","t":"","a":35.7063,"o":139.7769,"ig":"https://www.instagram.com/p/DZCcKL4JUdc/"},{"c":"日本必逛","n":"小網神社（洗錢求財運）","t":"常排隊，早點去","a":35.6834,"o":139.7799,"ig":"https://www.instagram.com/p/Db5g95yTyNr/"},{"c":"日本必逛","n":"江戶東京建物園","t":"武藏小金井站北口搭巴士","a":35.7155,"o":139.5135,"ig":"https://www.instagram.com/p/DU4fk_XkmdW/"},{"c":"日本必逛","n":"飯倉熊野神社（水占卜）","t":"麻布台2-2-14","a":35.6597,"o":139.7414,"ig":"https://www.instagram.com/p/Da1678PTwFG/"},{"c":"日本必逛","n":"FAMIMA PARK AZABUDAI","t":"全家旗艦店；虎ノ門5-2-10","a":35.6612,"o":139.7425,"ig":"https://www.instagram.com/p/DanDHENh1fL/"},{"c":"日本必逛","n":"TEAPOND 麻布台之丘","t":"巧克力奶茶、伯爵；Tower Plaza","a":35.6604,"o":139.7404,"ig":"https://www.instagram.com/p/DXxo3ohhu_w/"},{"c":"日本必逛","n":"東京鐵塔（爬樓梯上塔 ¥1,500）","t":"","a":35.6586,"o":139.7454,"ig":"https://www.instagram.com/p/DYMzCTdz3EH/"},{"c":"日本必逛","n":"NEWoMan TAKANAWA","t":"高輪 Gateway 站1分","a":35.6355,"o":139.7404,"ig":"https://www.instagram.com/p/DbUt5KcJC63/"},{"c":"日本必逛","n":"Found MUJI 青山","t":"神宮前5-50-6","a":35.6638,"o":139.7101,"ig":"https://www.instagram.com/p/DUVn-BBk-SN/"},{"c":"日本必逛","n":"茅乃舎 銀座（隈研吾）","t":"","a":35.671,"o":139.765,"ig":"https://www.instagram.com/p/DZFPrHAyG7y/"},{"c":"日本必逛","n":"Bono 相模大野（雨具店）","t":"HONDA 聯名雨衣；相模大野站5分","a":35.5323,"o":139.437,"ig":"https://www.instagram.com/p/DZZuraHzXpu/"},{"c":"日本拍照景點","n":"東京鐵塔 月光仙子拍點（機械振興会館）","t":"芝公園3-5","a":35.659336,"o":139.745582,"ig":"https://www.instagram.com/p/De6M-FZPvoZ/"},{"c":"日本拍照景點","n":"Hills House Sky Room（麻布台之丘）","t":"","a":35.6605,"o":139.74,"ig":"https://www.instagram.com/p/DcnKTsnMeEN/"},{"c":"日本拍照景點","n":"Shibuya Sky","t":"展望台 No.1；¥2,700起；提前20分找入口","a":35.6585,"o":139.7022,"ig":"https://www.instagram.com/p/DcGagnMBnad/"},{"c":"日本拍照景點","n":"麻布台之丘 Sky Lobby","t":"¥500＋飲品；最近東京鐵塔","a":35.6608,"o":139.7404,"ig":"https://www.instagram.com/p/DcGagnMBnad/"},{"c":"日本拍照景點","n":"六本木之丘 Tokyo City View","t":"¥2,400；52F","a":35.6604,"o":139.7292,"ig":"https://www.instagram.com/p/DcGagnMBnad/"},{"c":"日本拍照景點","n":"NEWoMan 高輪 LUFTBAUM","t":"免費展望台 29F","a":35.6355,"o":139.7404,"ig":"https://www.instagram.com/p/DcGagnMBnad/"},{"c":"日本拍照景點","n":"東京都廳展望室","t":"免費 45F；寶可夢光雕秀","a":35.6896,"o":139.6922,"ig":"https://www.instagram.com/p/DcGagnMBnad/"},{"c":"日本拍照景點","n":"東京晴空塔","t":"¥1,800起","a":35.7101,"o":139.8107,"ig":"https://www.instagram.com/p/DcGagnMBnad/"},{"c":"日本拍照景點","n":"淺草文化觀光中心 8F","t":"免費；看仲見世與晴空塔","a":35.7107,"o":139.7963,"ig":"https://www.instagram.com/p/DcGagnMBnad/"},{"c":"日本拍照景點","n":"惠比壽 Sky Lounge","t":"免費 38F","a":35.6423,"o":139.7135,"ig":"https://www.instagram.com/p/DcGagnMBnad/"},{"c":"日本拍照景點","n":"FabCafe Fuji（吉田本町商店街）","t":"富士山景咖啡","a":35.488,"o":138.807,"ig":"https://www.instagram.com/p/DbXUGBKEt6n/"},{"c":"日本拍照景點","n":"ESPRESSO D WORKS 七里ヶ浜","t":"海＋富士山","a":35.3065,"o":139.505,"ig":"https://www.instagram.com/p/DbXUGBKEt6n/"},{"c":"日本拍照景點","n":"THE PARK 山中湖","t":"森林系富士山景","a":35.415,"o":138.87,"ig":"https://www.instagram.com/p/DbXUGBKEt6n/"},{"c":"日本拍照景點","n":"平野の浜（山中湖）","t":"粉紅日出富士山","a":35.4238,"o":138.90101,"ig":"https://www.instagram.com/p/DVQrTfGAet1/"},{"c":"日本拍照景點","n":"白鳥の浜（山中湖）","t":"¥200 飼料餵天鵝","a":35.4095,"o":138.864,"ig":"https://www.instagram.com/p/DVQrTfGAet1/"},{"c":"日本拍照景點","n":"日川時計店 富士吉田","t":"旁邊巷子較少人","a":35.4868,"o":138.8045,"ig":"https://www.instagram.com/p/DVQrTfGAet1/"},{"c":"日本拍照景點","n":"Suitaku 水上計程車（橫濱）","t":"¥700/趟","a":35.4554,"o":139.6363,"ig":"https://www.instagram.com/p/DbcbfK3vSfI/"},{"c":"日本拍照景點","n":"高輪 / 泉岳寺站","t":"一排電車進站","a":35.6385,"o":139.74,"ig":"https://www.instagram.com/p/DbVxs5ERIVB/"},{"c":"日本拍照景點","n":"澀谷十字路口（替代拍點）","t":"","a":35.65969,"o":139.69997,"ig":"https://www.instagram.com/p/DXPRyxgBNl8/"},{"c":"日本拍照景點","n":"Bar Panorama（室內看煙火）","t":"","a":35.73086,"o":139.71621,"ig":"https://www.instagram.com/p/DZmofHfh26D/"},{"c":"日本拍照景點","n":"赤羽橋 東京鐵塔拍點","t":"赤羽橋下、7-Eleven 芝3丁目","a":35.65461,"o":139.74522,"ig":"https://www.instagram.com/p/Da7o4HqSiOC/"},{"c":"日本拍照景點","n":"東麻布 東京鐵塔隱藏機位","t":"東麻布1-1-5 / 1-3-6 / gift tokyo 旁斑馬線","a":35.6567,"o":139.7432,"ig":"https://www.instagram.com/p/DakLdP4pXx1/"},{"c":"日本拍照景點","n":"Tofu Ukai 停車場出口","t":"網紅東京鐵塔拍點","a":35.6566,"o":139.7468,"ig":"https://www.instagram.com/p/DWMQN3iCR8K/"},{"c":"日本拍照景點","n":"中島公園（札幌）","t":"","a":43.0459,"o":141.3542,"ig":"https://www.instagram.com/p/DbLVpKwRF7l/"},{"c":"日本拍照景點","n":"小樽運河","t":"","a":43.1993,"o":141.0024,"ig":"https://www.instagram.com/p/DbLVpKwRF7l/"},{"c":"日本拍照景點","n":"小樽堺町通商店街","t":"","a":43.1938,"o":141.0094,"ig":"https://www.instagram.com/p/DbLVpKwRF7l/"},{"c":"日本拍照景點","n":"朝里站（小樽）","t":"","a":43.164,"o":141.0458,"ig":"https://www.instagram.com/p/DbLVpKwRF7l/"},{"c":"日本拍照景點","n":"登別地獄谷","t":"","a":42.4966,"o":141.1474,"ig":"https://www.instagram.com/p/DbLVpKwRF7l/"},{"c":"日本拍照景點","n":"Ningle Terrace（富良野）","t":"","a":43.3283,"o":142.36,"ig":"https://www.instagram.com/p/DbLVpKwRF7l/"},{"c":"東京必喝咖啡","n":"Glitch Coffee 日本橋","t":"極淺焙；點 Coffee Tasting Flight；比銀座店好排","a":35.6845,"o":139.7745,"ig":"https://www.instagram.com/p/Db8BFylyxct/"},{"c":"東京必喝咖啡","n":"Glitch Coffee 銀座","t":"亞洲前50咖啡店；人潮最多","a":35.6735,"o":139.7625,"ig":"https://www.instagram.com/p/DZUrbTbyTcL/"},{"c":"東京必喝咖啡","n":"FUGLEN Tokyo 富ヶ谷","t":"挪威咖啡；07:00–25:00；代々木公園站2分","a":35.666644,"o":139.692426,"ig":"https://www.instagram.com/p/DZUrbTbyTcL/"},{"c":"東京必喝咖啡","n":"NO.4 麴町","t":"08:00–21:00；千代田区四番町5-9","a":35.688192,"o":139.736072,"ig":"https://www.instagram.com/p/DYFGOV5NW1v/"},{"c":"東京必喝咖啡","n":"ONIBUS COFFEE 中目黒","t":"09:00–18:00；上目黒2-14-1","a":35.643,"o":139.698,"ig":"https://www.instagram.com/p/DYFGOV5NW1v/"},{"c":"東京必喝咖啡","n":"Cois Espresso Club 新大久保","t":"11:00–21:00；百人町1-7-16 5F","a":35.701,"o":139.7,"ig":"https://www.instagram.com/p/DYFGOV5NW1v/"},{"c":"東京必喝咖啡","n":"dacō 中目黒","t":"10:00–20:00；上目黒1-3-18","a":35.6455,"o":139.6995,"ig":"https://www.instagram.com/p/DYFGOV5NW1v/"},{"c":"東京必喝咖啡","n":"neel 中目黒","t":"09:00–20:30；青葉台1-25-9","a":35.6475,"o":139.6935,"ig":"https://www.instagram.com/p/DYFGOV5NW1v/"},{"c":"日本必吃","n":"亀や 新宿店（思出橫丁）","t":"天婦羅蕎麥 ¥500 起；24 小時；現場排隊翻桌快","a":35.6931,"o":139.6997,"ig":"https://www.youtube.com/shorts/o88Si_PffIM"},{"c":"日本必吃","n":"しゃぶしゃぶ 新村（歌舞伎町）","t":"壽喜燒；開到很晚；Google 可訂位","a":35.6947,"o":139.7016,"ig":"https://www.youtube.com/shorts/o88Si_PffIM"},{"c":"日本必吃","n":"らーめん 鴨&葱 巣鴨店","t":"鴨肉蔥拉麵；比上野店好排；巣鴨1-11-4","a":35.7336,"o":139.7386,"ig":"https://www.youtube.com/shorts/o88Si_PffIM"},{"c":"日本必吃","n":"ねもとら 人形町","t":"牛里脊牛丼＋整顆洋蔥；布丁必點；約 ¥1,000","a":35.6862,"o":139.7828,"ig":"https://www.youtube.com/shorts/-4QROEu7xVg"},{"c":"日本必吃","n":"肉屋横丁 秋葉原店","t":"和牛燒肉吃到飽 ¥6,980（含飲料）；限時 100 分；要訂位","a":35.699,"o":139.772,"ig":"https://www.youtube.com/shorts/2zzBuLI8by0"}];
+// [source, path, title, author, tags]  ig path = p/CODE/ ; fb path relative to facebook.com
+const RECIPES = [
+["ig","p/DZHGQGkPKy3/","一鍋到底雙主菜：鮮嫩燉肉＋果香咖哩豬","","豬肉,湯鍋"],
+["ig","p/DVzz_LUEfX1/","無水燉五花（韓式白切肉）","","豬肉,湯鍋"],
+["ig","p/DX5UbGlJktE/","日式咖哩烏龍麵備餐包，5 分鐘晚餐","","麵飯"],
+["ig","p/DWeCSyFgRC9/","番茄燉牛肋條，一鍋到底","小璇的廚房日記","牛肉,湯鍋"],
+["ig","p/DSrql_7CeFa/","養樂多滷肉（養樂多:醬油:水 = 3:1:2）","","豬肉"],
+["ig","p/DSwwi18kp6q/","無水白菜雞腿鍋（居酒屋風）","","雞肉,湯鍋"],
+["ig","p/DWBhv6dE-mD/","極致紅燒牛肉麵（洋蔥先烤更甜）","","牛肉,麵飯,湯鍋"],
+["ig","p/DX4BYJETiVl/","電子鍋鮪魚奶香烏龍麵","","海鮮,麵飯"],
+["ig","p/DVivtUkk75k/","無水黃金雞湯","","雞肉,湯鍋"],
+["ig","p/DVnPGbfkwD7/","蔥鹽雞腿飯（雞肉鋪米上一起煮）","","雞肉,麵飯"],
+["ig","p/DXg7GQmkiA4/","0 失敗氣炸雞胸肉（鹽水 500g:15g）","霞當家","雞肉,減脂"],
+["ig","p/Dc3OwE6pKZS/","好市多雞胸片醃法","","雞肉,減脂"],
+["ig","p/Dcz0JZ4PW9F/","麻藥醬醃嫩豆腐","","蔬菜豆腐"],
+["ig","p/DaFvON7zQrG/","減脂神湯","","湯鍋,減脂"],
+["ig","p/DUav25hiLMp/","減脂料理（夫妻瘦 28 公斤）","","減脂"],
+["ig","p/DcQRok2o87N/","地瓜乳酪蛋糕","","甜點"],
+["ig","p/Da12JnCAact/","減脂版起司蛋糕","","甜點,減脂"],
+["ig","p/DcN7FpIBjt7/","4 種材料優格巴斯克","","甜點,減脂"],
+["ig","p/DbdH9vYTceP/","伯爵奶酒冰淇淋（免冰淇淋機）","","甜點"],
+["ig","p/DZe7O24ye32/","人生綠拿鐵","","減脂"],
+["fb","reel/3237973983069707/","芹菜豆腐拌雞蛋","深藏blue","蔬菜豆腐"],
+["fb","reel/1762538884802763/","台式醃泡菜，酸甜脆爽","Ky料理分享","蔬菜豆腐"],
+["fb","reel/837909975713754/","復刻香港豆腐芝士蛋糕","馋嘴猫","甜點,蔬菜豆腐"],
+["fb","reel/876608641554031/","完美口感，色澤分明（甜點）","主厨Neil在澳洲","甜點"],
+["fb","reel/1399995801732165/","養樂多馬鈴薯燉肉","Ky料理分享","豬肉,湯鍋"],
+["fb","reel/715531598273245/","養樂多燒排骨","Ky料理分享","豬肉"],
+["fb","reel/1906662219919181/","優格巴斯克乳酪蛋糕（減醣減脂）","我可是生活家","甜點,減脂"],
+["fb","reel/1070550671669489/","番茄肥牛響鈴卷","孩儿他姥姥","牛肉"],
+["fb","reel/1157102852980226/","怕澱粉？（楊桃）","楊桃美食網","減脂"],
+["fb","100093251719454/videos/2756081727934313/","零雞蛋免烤箱絕蛋雙焦布丁","主厨Neil在澳洲","甜點"],
+["fb","iamprettyladies/videos/2154482035038753/","七道低卡低脂減脂餐","美眉减肥日记","減脂"],
+["fb","iamprettyladies/videos/23985201787779401/","連吃兩周瘦七斤的減脂餐","美眉减肥日记","減脂"],
+["fb","reel/1497691288135261/","不過油的燒茄子","Yummy World 大食在","蔬菜豆腐"],
+["fb","reel/653941603979013/","韓式海鮮煎餅，黃金脆皮","楊桃美食網","海鮮"],
+["fb","reel/693437940418882/","無奶油巧克力甜筒","我是辣妈Lee Tieng","甜點"],
+["fb","100072299195877/videos/1458130491870310/","自己做手抓餅","菲菲妈爱美食","麵飯"],
+["fb","reel/1302570474921568/","北海道流心芝士撻","谁不爱美食","甜點"],
+["fb","layuexiaojiu/videos/4196499640564406/","餛飩店好吃的秘密","腊月小九","麵飯"],
+["fb","100090908741378/videos/1485604476153942/","孜然牛肉粒","孩儿他姥姥","牛肉"],
+["fb","100070789395453/videos/2079700862521836/","萬能麵團做兩款吐司","ValigalamBarbara1","甜點"],
+["fb","100072299195877/videos/694237120330939/","鮮嫩多汁豬肉餅（可冷凍）","菲菲妈爱美食","豬肉"],
+["fb","100090908741378/videos/3300457590113449/","不用油的燒茄子","孩儿他姥姥","蔬菜豆腐"],
+["fb","100083365303540/videos/1460824924956737/","私房餛飩","大萍爱美食","麵飯,湯鍋"],
+["fb","100083365303540/videos/23893950536974052/","備餐 4 種口味肉餅","大萍爱美食","豬肉"],
+["fb","100090908741378/videos/1276497917439565/","鹽蔥雞腿飯","孩儿他姥姥","雞肉,麵飯"],
+["fb","reel/1397777911331223/","Eunice ng 的料理影片","Eunice ng","牛肉"],
+["fb","reel/1197428565522384/","醬燒手撕雞腿肉蓋飯","阿嬤的廚房","雞肉,麵飯"],
+["fb","61556762986107/videos/24732122123072821/","黃金芝士小餐包","快乐学烘培","甜點"],
+["fb","61559186403607/videos/1279689117100214/","黃金芝士條","木头和秀秀","甜點"],
+["fb","61559290108935/videos/752724760834219/","無奶油巴斯克","谁不爱美食","甜點"],
+["fb","100076462658587/videos/2458126044588016/","一口爆汁門釘肉餅","美食记 家的味道","豬肉"],
+["fb","61559290108935/videos/1282780829365503/","芋泥肉鬆芝士脆皮年糕","谁不爱美食","甜點"],
+["fb","100092599746435/videos/2755845201275980/","中式花酥","了了小食代","甜點"],
+["fb","100092599746435/videos/1405521164012018/","3Q 酥餅","了了小食代","甜點"],
+["fb","reel/4072635656358983/","冰淇淋曲奇","芝芝的生活碎片","甜點"],
+["fb","reel/779506135019551/","簡直太神了（木头和秀秀）","木头和秀秀",""],
+["fb","100092599746435/videos/2278755509251084/","芋泥奶酪月餅","了了小食代","甜點"],
+["fb","100092599746435/videos/1072346941777918/","萬能金沙奶黃餡","了了小食代","甜點"],
+["fb","reel/1362515481962674/","月下兔月餅","了了小食代","甜點"],
+["fb","reel/3925659667656428/","蝦扯寬麵，酸辣開胃","HallalMango","海鮮,麵飯"],
+["fb","reel/1432317908010644/","魏魏的料理影片","魏魏 Wei",""],
+["fb","reel/1390605208841088/","清燉牛肉秘方","魏魏師傅 Wei Cooks","牛肉,湯鍋"],
+["fb","reel/1479487133409109/","棉花蛋糕，零失敗","木头和秀秀","甜點"],
+["fb","100081335351159/videos/689079770655061/","微波爐蔥油拌麵","简玲","麵飯"],
+["fb","reel/1345003050119902/","妮妮的料理影片","妮妮",""],
+["fb","61559186403607/videos/9539562152839563/","涼拌雞胸肉片","木头和秀秀","雞肉,減脂"],
+["fb","61573526167566/videos/1043472351062950/","黑芝麻糊蛋糕","老于同学","甜點"],
+["fb","61559186403607/videos/1062932819090729/","免揉麵拉絲吐司","木头和秀秀","甜點"],
+["fb","Dessert1023/videos/1083079957103277/","免揉麵超軟蛋奶吐司","甜品美食Dessert","甜點"],
+["fb","reel/1148521397020947/","睡睡子的料理影片","睡睡子",""],
+["fb","reel/657925897027140/","免烤箱豆腐芝士蛋糕","主厨Neil在澳洲","甜點,蔬菜豆腐"],
+["fb","100093251719454/videos/1693122711331810/","雙重焦糖抹茶布丁","主厨Neil在澳洲","甜點"],
+["fb","reel/1006442171302967/","只要四種材料（甜點）","木头和秀秀","甜點"],
+["fb","reel/715175707751496/","營養師凱蒂的料理","營養師凱蒂 KaiHui","減脂"],
+["fb","reel/1173934820579568/","營養師凱蒂的料理（2）","營養師凱蒂 KaiHui","減脂"],
+["fb","reel/1448940972784280/","Lin霖的料理影片","Lin霖",""],
+["fb","Dessert1023/videos/1115685457267081/","浮雲卷","甜品美食Dessert","甜點"],
+["fb","reel/638599921928130/","減脂甜點","小比利","甜點,減脂"],
+["fb","reel/1107664487230771/","麻油雞飯，直火煮才道地","楊桃美食網","雞肉,麵飯"],
+["fb","reel/9347571408596847/","油飯要好吃，蒸好再拌","楊桃美食網","麵飯"],
+["fb","reel/958745092343539/","健康料理","曉鈞｜愛做健康料理的闆娘","減脂"],
+["fb","reel/457408336729657/","無負擔（楊桃）","楊桃美食網","減脂"],
+["fb","reel/1978270649268246/","Hendri 的料理影片","Hendri",""],
+["fb","reel/1220260265840341/","偏健康飲食","Fama小餐桌","減脂"],
+["fb","reel/475206735287389/","偏健康飲食（2）","Fama小餐桌","減脂"],
+["fb","reel/1161125038449320/","Miso Jen 的料理","Miso Jen Kitchen",""],
+["fb","61551503330732/videos/493040893082135/","恰巴塔麵包","园园的菜菜","甜點"],
+["fb","reel/947712800077424/","0 麵粉可可古早蛋糕（減脂）","美食奥秘","甜點,減脂"],
+["fb","jaycarol/posts/pfbid02rQSZfZ2TXatr4gkjYU6xLrLzmzpkYxQrz7B5bvXk6YnsyChxk2gsAgi6KkkHWKFgl","豆沙麻薯肉鬆蛋黃酥","carol自在生活","甜點"],
+["fb","reel/1290208771834323/","The easiest Focaccia","Cooking With Ayeh","甜點"],
+["fb","TastyPresents/videos/1524857977994690/","Mini Deep Dish Pizzas","Tasty Presents","麵飯"],
+["fb","ytower01/videos/548061166243042/","頂級糖醋蝦仁","楊桃美食網","海鮮"],
+["fb","ytower01/videos/430144015093305/","肉鬆餅","楊桃美食網","甜點"],
+["fb","ytower01/videos/2088800767938995/","芋泥捲","楊桃美食網","甜點"],
+["fb","ytower01/videos/3016727895215786/","奶油烤白菜，好吃到牽絲","楊桃美食網","蔬菜豆腐"],
+["fb","ytower01/videos/359468602548485/","花枝蝦排","楊桃美食網","海鮮"],
+["fb","groups/2028695183830288/permalink/4203207979712320/","馬鈴薯雞胸肉蔬菜煎餅","唐淇","雞肉,蔬菜豆腐"],
+["fb","NancySKitchenBaking/posts/pfbid02AaYBxvdKakfaeFeJFonPPTgtFRuDcN6qUzui4iQ8dnfte4dgNMQzNk9JAdyxBt6Ql","4 種口味奶油曲奇","翔太の卡將的廚房日記","甜點"],
+["fb","buzzfeedtasty/videos/996376477451686/","11 Satisfying Salads","Tasty","蔬菜豆腐"],
+["fb","ytower01/videos/3403241493065438/","蛋塔不麻煩","楊桃美食網","甜點"],
+["fb","tastyjunior/videos/902792103532809/","Homemade Chocolate Croissants","Tasty Junior","甜點"],
+["fb","ytower01/videos/597761537550935/","餡料好吃，水餃就成功","楊桃美食網","麵飯"],
+["fb","LaMaShania/videos/377276706577109/","芋頭鴛鴦餅","辣媽Shania","甜點"],
+["fb","KaiXinLiaoLi/videos/1466684710192805/","電鍋舒肥三款雞胸","開心料理","雞肉,減脂"],
+["fb","tastyjunior/videos/743564103081426/","5 Brilliant Salmon Recipes","Tasty Junior","海鮮"],
+["fb","jaycarol/posts/pfbid02poWCLKPMKp9Lhaq6kAb7iCZvy5VTL3jssGowV1gAdFceCUG7nv9455MLsz2qLDw9l","乳酪紅椒餅乾","carol自在生活","甜點"],
+["fb","ytower01/videos/679982699212887/","就是這個味（楊桃）","楊桃美食網",""],
+["fb","jaycarol/posts/pfbid0n4H1g3t7CCGZykFZ3E5GqFAKe6cktemd7sphKhPK4B5npdxhNLRG9CcgwB21zLXVl","乳酪布丁塔","carol自在生活","甜點"],
+["fb","jamieoliver/videos/1343263115875290/","Quick Steak Stir Fry","Jamie Oliver","牛肉"],
+["fb","pig61106/posts/pfbid0dGV2jzn9Zo4opxfiSugHJx61ZVz8QSBoPgUczZ2UNt893s5SCPYpSw48ffAxQ5gKl","豆腐入味的 2 個小技巧","Dream Chef Home","蔬菜豆腐"],
+["fb","theeverydayobject/posts/pfbid0pQa5QynqoSL6u3qKQQgiDBXtKnyzSBK6w3zepqdJ2EEyGHkCNKUwyP2dzzBqFJ23l","東京 Mr. CHEESECAKE 公開食譜","EVERYDAY OBJECT","甜點"],
+["fb","ytower01/videos/286747052321723/","蔥油餅關鍵在麵糰","楊桃美食網","麵飯"],
+["fb","wecook123/videos/734008170671673/","古早味粉漿蛋餅","料理123","麵飯"],
+["fb","jenny.wu.735944/posts/pfbid02VUgRB6uFdTQA4PxD5n98iBCSUdSUevPcb9UTp913snzf29J5NBeinHvWftnfbfNml","水餃自己做，擀皮拌餡一機完成","Jenny C Wu","麵飯"],
+["fb","tastyjunior/videos/2694223184126318/","Macarons 4 Ways","Tasty Junior","甜點"],
+["fb","CaVaTaiwan/videos/1031870160902456/","吃得到洋蔥本人","造咖",""],
+["fb","groups/1594595130782170/permalink/2676934559214883/","上海點心蘿蔔絲酥餅","Paul Treeman","甜點"],
+["fb","ic.icare/posts/pfbid07mVLLoM4oExxLJxLguDAoc2ZmGGfAYwreLhsZ8nXsvbAqQLc62mWRK3vESWvi7LCl","鹽味奶油捲","ICare Baking","甜點"],
+["fb","reel/1302544594956551/","小山進原配方無奶油巴斯克","烘焙大全","甜點"],
+["fb","reel/829679409751701/","不用飛日本（在家做日式甜點）","主厨Neil在澳洲","甜點"],
+["fb","reel/658113797243746/","秋葵山藥冷豆腐","詹姆士","蔬菜豆腐"],
+["fb","groups/2010238662674384/permalink/2462401137458132/","東京 No.1 茉莉芝士蛋糕配方","Chanel Downs","甜點"],
+];
+// [source, path, title, author, area]
+const SHOPS = [
+["fb","marcoeat/videos/849272270629294/","小跑豬 24H 韓式自助拉麵 鳳山旗艦店","我是 馬可 Marco","高雄"],
+["fb","reel/549628234205511/","蒸炸肉圓一次滿足的店","美食好芃友","高雄"],
+["fb","reel/1704519653720110/","左營高鐵周邊鮭魚自由好去處","美食好芃友","高雄"],
+["fb","mandynotes/videos/477120118631543/","高雄最難訂的中式餐館","Mandy's 美食筆記","高雄"],
+["fb","reel/546661004492983/","熱河夜市麻辣燙","美食好芃友","高雄"],
+["fb","marcoeat/videos/459896216587619/","坐看雲起時 秘境景觀餐廳下午茶","我是 馬可 Marco","高雄"],
+["fb","reel/1186293912578380/","仁武蝦蝦味噌拉麵","美食好芃友","高雄"],
+["fb","reel/1449774159060187/","週日打折的冰淇淋老店","美食好芃友","高雄"],
+["fb","marcoeat/videos/364619612861138/","勇記無敵蘿蔔糕","我是 馬可 Marco","高雄"],
+["fb","marcoeat/videos/1031053748543069/","上菜 片皮鴨專賣店 夢時代店","我是 馬可 Marco","高雄"],
+["fb","mandynotes/videos/490765446845928/","19to1 鮮選牛排（無限加）","Mandy's 美食筆記","高雄"],
+["fb","reel/1078463143572481/","日本媽媽開的日式家庭料理","美食好芃友","高雄"],
+["fb","reel/706525391952760/","高雄美食底對 推薦","高雄美食底對","高雄"],
+["fb","reel/539296425397021/","高雄美食底對 推薦（2）","高雄美食底對","高雄"],
+["fb","reel/3758103204402081/","虎麗笑嗨嗨 推薦","高雄美食 虎麗笑嗨嗨","高雄"],
+["fb","reel/433250269604662/","冠哥探店","冠哥探店","高雄・台南"],
+["fb","reel/1278141166713883/","吃貨日記 推薦","吃貨日記","高雄"],
+["fb","reel/916500643640285/","阿華田的美食日記","阿華田的美食日記","台北・新竹"],
+["fb","reel/882399657161512/","大食女 推薦","大食女","台北"],
+["fb","reel/1065957198275636/","1000CC 推薦","1000CC","台北・桃園"],
+["fb","reel/1075998240918383/","辰辰卉卉 推薦","辰辰卉卉","台北・新北"],
+["fb","reel/399028569728001/","孜孜吃美食 探店","孜孜吃美食","台北・新北"],
+["fb","reel/488988240646561/","源仔ㄉ美食日記","源仔ㄉ美食日記","台中・彰化"],
+["fb","reel/326267140542882/","365day 一起探店","365day一起探店","台中"],
+["fb","reel/795780476014450/","旅兔的貪吃日記","旅兔的貪吃日記","台中"],
+["fb","reel/1586314478619074/","想吃湯包都會來這家","捲捲 & 土豆拿鐵","台灣"],
+["fb","reel/519388454038199/","崴崴吃吃 推薦","崴崴吃吃","台灣"],
+["fb","reel/1685393525581969/","吃货小日常","吃货小日常","—"],
+["fb","reel/1218202202723737/","抹妹 推薦","抹妹","台北・台中"],
+["fb","reel/495139556754720/","抹妹 推薦（2）","抹妹","台北・台中"],
+["fb","reel/8482512155102862/","陳芃芃的美食天地","陳芃芃","台北・台中"],
+["fb","reel/811919900811771/","冬冬生活美食日記","冬冬","台灣"],
+];
+// [source, path, title, group]
+const TIPS = [
+["ig","p/DdbS9qkSL2d/","Visit Japan Web 填寫教學","入境・交通"],
+["ig","p/DaxuePDyOSB/","2026 最新版 Visit Japan Web","入境・交通"],
+["ig","p/DaPwHqck2Np/","2026 下半年日本新制度 5 提醒","入境・交通"],
+["ig","p/DaoaodeSpxT/","日本退稅 2026/11 新制（先付後退）","入境・交通"],
+["ig","p/DZUuVX3SkD-/","免稅購物提前完成","入境・交通"],
+["ig","p/DXd1tcVE9H7/","成田機場人臉辨識登記","入境・交通"],
+["ig","p/DaVHfyaBMr8/","機場最快到東京市區","入境・交通"],
+["ig","p/Da4LKHth7HL/","機場不排隊 5 件事","入境・交通"],
+["ig","p/DSCqqePEjmM/","東京護照遺失自救流程","入境・交通"],
+["ig","p/DZ45C8KzRPV/","新手日本自駕 5 件事","入境・交通"],
+["ig","p/Da7byxWN3Qc/","日本自駕右轉注意","入境・交通"],
+["ig","p/Da3Biabpwim/","自助加油找零","入境・交通"],
+["ig","p/DYSLhIvx5kW/","高速巴士直達河口湖","入境・交通"],
+["ig","p/DZw-KHpAbw2/","iPhone 快速交通卡設定","省錢・好康"],
+["ig","p/DaxP9Vuvpjn/","西瓜卡儲值進手機","省錢・好康"],
+["ig","p/DZz09JynO13/","日幣零錢存進西瓜卡","省錢・好康"],
+["ig","p/DZbZMOVT3Mq/","羽田機場免費櫻花西瓜卡","省錢・好康"],
+["ig","p/DWyauQcB8VW/","Lawson 集 OPEN POINT","省錢・好康"],
+["ig","p/DUS7XxsktWu/","空姐的 3 個省錢 App","省錢・好康"],
+["ig","p/DXzBqIMq8jm/","日本實用 App（Tabelog 等）","省錢・好康"],
+["ig","p/DZuktoITEzq/","成田機場免費鐵道鑰匙圈","省錢・好康"],
+["ig","p/DX1SuunPQym/","JR 東日本免費櫻花鑰匙圈","省錢・好康"],
+["ig","p/DbX12icp61D/","日本消費省錢","省錢・好康"],
+["ig","p/DV8jgvfFPeq/","日本餐廳付錢插隊","省錢・好康"],
+["ig","p/DWgL9-iE4sO/","Shibuya Sky 入口（提前 20 分找）","省錢・好康"],
+["ig","p/DXJetGbiH66/","日本冷知識","省錢・好康"],
+["ig","p/DXmMH5ZDxKP/","快閃北海道 3 天 3 夜","行程"],
+["ig","p/DDcezSczrgj/","冬季北海道 7 天 6 夜","行程"],
+["ig","p/DYYgDaUpF-5/","札幌 3 天 2 夜約會行程","行程"],
+["ig","p/DY9zxMoyUxe/","九州 9 天 8 夜（熊本進出）","行程"],
+["ig","p/DVBO15ij8Rt/","東京自由行懶人包","行程"],
+["ig","p/DaSkmO6xOmg/","東京近郊一日遊","行程"],
+["ig","p/DR61CxnEhUz/","川越半日遊","行程"],
+["ig","p/DZzgouJOeUG/","鎌倉・江之島一日遊","行程"],
+["ig","p/DUBChEhEtyM/","鎌倉＋江之島＋橫濱 14 小時","行程"],
+["ig","p/DVbK6ZmAT14/","富士山單日往返（包車）","行程"],
+["ig","p/DWQy5kIkbbs/","河口湖 3 天 2 夜","行程"],
+["ig","p/Db0OhaFStTl/","富士山雨備行程","行程"],
+["ig","p/DWT3-cRE2Ry/","伊勢志摩＋近鐵周遊券","行程"],
+["ig","p/DUK1QpCEw5a/","2026 韓國電子入境申報","韓國"],
+["ig","p/DXZKL34CWC9/","Smart Pass 快速出境","韓國"],
+["ig","p/DX1QcsQiY0_/","2026 韓國退稅全攻略","韓國"],
+["ig","p/DXeHEQhE8lL/","樂天百貨折價券＋退稅","韓國"],
+["ig","p/DYMWLZ9P3Tf/","首爾平價住宿（台灣老闆娘）","韓國"],
+["ig","p/DWDzgt-EvqE/","韓國藥局 14 樣必買","韓國"],
+["ig","p/DVLk_BGANb2/","聖水洞刀削麵","韓國"],
+["ig","p/DVgQDx1kXph/","首爾中文接送機","韓國"],
+["ig","p/DUfwNIUktYy/","韓國叫外送教學","韓國"],
+["ig","p/DXZTjy1jzGn/","首爾免費優惠（Klook）","韓國"],
+["ig","p/DQrCnXuk-cM/","避雷：韓國乳酸菌飲料","韓國"],
+["ig","p/DYzXjrUvrvf/","紐西蘭 Airbnb 清單","其他"],
+["ig","p/DUfy0wAEY84/","2026 歐洲高 CP 值國家","其他"],
+["ig","p/DdoZcNTE58Q/","大西洋郵輪移航 15 天","其他"],
+["ig","p/DSKac50E8JN/","便宜機票／外站票","其他"],
+["ig","p/DYgx-nzxYIK/","外站票／四腿票","其他"],
+["fb","caspercapitaltv/posts/pfbid0e9Nm8SV8Bfyp1zwhLHHs5TTNzUQ7Ngmy74QC1aefJZKNRQsinmtrQpcMtiVjAjZYl","比 Skyscanner 更好用的訂票工具","其他"],
+["fb","reel/545055281195471/","住在日本的台灣人（卉卉）","其他"],
+["fb","reel/525600630343364/","Mardi 日本美食旅遊","其他"],
+["fb","reel/444261018631588/","林麥拉 獨旅自由行","其他"],
+["fb","reel/889373299730895/","遇fun胃 日韓港泰旅遊","其他"],
+["fb","reel/550080067833540/","飛飛 親子旅遊住宿","其他"],
+["fb","reel/855071403418717/","柏維 全台住宿旅遊","其他"],
+["fb","reel/860377292629598/","安安旅途中","其他"],
+["fb","reel/1176651600051167/","安安旅途中（2）","其他"],
+];
+
+const SHOPPING = [["藥妝・保養・彩妝", "唐吉訶德 5 款寶藏藥妝（UTENA 碎髮整理等）", ["DeManstBADZ"]], ["藥妝・保養・彩妝", "曼秀雷敦 pH 變色護唇膏", ["Db8A7-zhXM8"]], ["藥妝・保養・彩妝", "SUGI 藥局 7 樣回購品（優惠券大方）", ["DYwd9YuBwY4"]], ["藥妝・保養・彩妝", "防曬＋控油小物", ["DbU4W9xzOat"]], ["藥妝・保養・彩妝", "痘痘神藥", ["DbkPsSGzyYJ"]], ["藥妝・保養・彩妝", "CHPT9 毛孔粉刺精華", ["DaQD1JZRb3z"]], ["藥妝・保養・彩妝", "ereru 雙重 PDRN 外泌體精華（共 4 則同款）", ["DblOZYYxea8", "DZca9fVSFHs", "DYb_jUFxhZj", "DYb_bMBxODG"]], ["藥妝・保養・彩妝", "膠囊精華（亮白）", ["DYTC8DoMQyP"]], ["藥妝・保養・彩妝", "粉嫩唇膏／眼線膠筆", ["DZXOxytByo6"]], ["藥妝・保養・彩妝", "藥妝 5 選（Chacott 臥蠶筆、myBoostars）", ["DYR4THwPC8G"]], ["藥妝・保養・彩妝", "每月藥妝清單（Transino、新 LULU、LOXONIN）", ["DbYGTFcSi7o"]], ["藥妝・保養・彩妝", "毛孔去角質", ["DbKlRKnzSmB"]], ["藥妝・保養・彩妝", "@cosme TOKYO 六樣閉眼買", ["DaktmhHBhLN"]], ["藥妝・保養・彩妝", "藥妝必購清單（彩妝／藥品／髮品）", ["DWET3A1hTDQ"]], ["藥妝・保養・彩妝", "彩妝保養必買", ["DUzkndGgUur"]], ["藥妝・保養・彩妝", "彩妝篇", ["DXowfrhEhfV"]], ["藥妝・保養・彩妝", "住日 7 年回購好物（DUO 卸妝膏、いち髪）", ["DaaWn8HPwMZ"]], ["藥妝・保養・彩妝", "腳跟乾裂改善＋20% 維他命 C", ["DaKoMBrzKAw"]], ["藥妝・保養・彩妝", "Her lip to 擴香", ["DYuTMlDvZIJ"]], ["髮品", "BOTANIST 新款護髮油", ["DeG6gr_B3Y2"]], ["髮品", "BOTANIST 護髮油（乾燥受損髮）", ["DdldpN4TAAl"]], ["髮品", "福岡藥妝：myBoostars 角蛋白精華水", ["DYUfqnRpt1J"]], ["髮品", "抗靜電瀏海梳 3 品牌實測", ["DXCKgO6kwdn"]], ["髮品", "SALONIA 光澤順髮梳", ["DYRl_4jTbbs"]], ["髮品", "靜電光澤梳（唐吉訶德）", ["DYoK2qWzEz1"]], ["髮品", "無印良品頭皮精華", ["DbAoLqIpZrk"]], ["髮品", "DARIYA 蓋白髮", ["DbGK7FUJbAd"]], ["髮品", "CIELO 染髮梳", ["DUAo9_2ElhE"]], ["無印良品／3COINS／大創／Seria", "無印廣口收納包", ["DZCBIz2TbmH"]], ["無印良品／3COINS／大創／Seria", "無印束口袋", ["Daw_v8nzcHv"]], ["無印良品／3COINS／大創／Seria", "無印必買第二集（頭皮噴霧、睡衣、直角襪）", ["DbN6-7MPPrM"]], ["無印良品／3COINS／大創／Seria", "無印線香盒＋日本香堂線香", ["DXHMPJ-AZLB"]], ["無印良品／3COINS／大創／Seria", "無印熱門品", ["DbIPSXhTcT7"]], ["無印良品／3COINS／大創／Seria", "無印日本限定 BB 霜", ["DZFfMEHvogk"]], ["無印良品／3COINS／大創／Seria", "3COINS 電子儲金箱", ["Dbf2quszNnQ"]], ["無印良品／3COINS／大創／Seria", "3COINS 必買 3 選（煮蛋神器、外套掛繩）", ["DW803vTgXYw"]], ["無印良品／3COINS／大創／Seria", "3COINS 真空壓縮收納袋", ["DalAtAzoRQt"]], ["無印良品／3COINS／大創／Seria", "大創版 AirTag", ["Da4IFDchaN_"]], ["無印良品／3COINS／大創／Seria", "Seria 試用包密封夾", ["DcgPm4uTDek"]], ["食品・調味料・抹茶", "日本超市神級調味料 7 選", ["Ddl2PYgkshr"]], ["食品・調味料・抹茶", "HAGINO 海鮮高湯鹽", ["DZFHeImyBaI"]], ["食品・調味料・抹茶", "森下仁丹益生菌", ["Db4vBK4Rmtq"]], ["食品・調味料・抹茶", "北千住 Ajo Base 大蒜鹽麴", ["DYzDLplT0-5"]], ["食品・調味料・抹茶", "新宿池田屋抹茶店", ["DXbRiSak_fj"]], ["食品・調味料・抹茶", "抹茶品牌比較", ["DYUNkG8y_yu"]], ["食品・調味料・抹茶", "東京高顏值甜點", ["DaXrDcdTLLa"]], ["食品・調味料・抹茶", "地瓜／楓糖奶油抹醬（唐吉訶德）", ["Da1ZeMYhdn3"]], ["食品・調味料・抹茶", "拌飯醬（避雷）", ["DUVVZTpE8zd"]], ["食品・調味料・抹茶", "新千歲機場伴手禮（起司蛋糕、抹茶）", ["DaDL_A8TbQT"]], ["食品・調味料・抹茶", "東京 150 年老店客製高湯包", ["Dap00-nTffb"]], ["廚房・家居", "Hirone 琺瑯方形奶鍋", ["DeNmQlXAcjG"]], ["廚房・家居", "日革除蟎墊", ["DdDTgfeCRWo"]], ["廚房・家居", "recolte 無線調理機（刀頭有鋰電池要隨身帶）", ["DazZ3z9Ck9f"]], ["購物地點・攻略", "唐吉訶德必買", ["DakWgWJjWAt"]], ["購物地點・攻略", "唐吉訶德生活好物", ["DY3l-KPB_B8"]], ["購物地點・攻略", "OS Drug 便宜藥妝（只收現金、19:30 打烊）", ["DUN5DBMkisA"]], ["購物地點・攻略", "日本好市多比唐吉訶德便宜", ["DVYKlkQEVpQ"]], ["購物地點・攻略", "新宿 BEAMS JAPAN", ["DZUd2EthF4d"]], ["購物地點・攻略", "新宿百貨懶人包", ["DbTCkCHE9TH"]], ["購物地點・攻略", "樂天免稅店", ["DanFmkKko5c"]], ["購物地點・攻略", "JINS 新宿全球最大旗艦店", ["DYUYec-RCEQ"]], ["購物地點・攻略", "東京 2026 鞋店清單", ["Da-fEyDve0y"]], ["購物地點・攻略", "亮鑽漁網鞋", ["Ddq_Qi0Tr5V"]], ["購物地點・攻略", "東京購物（topologie、CELINE）", ["DXwJJKzyJk-"]], ["購物地點・攻略", "富士山紀念品 TOP7", ["Dbuu0TGS9bo"]], ["購物地點・攻略", "札幌客製照片禮品", ["DX9boJ5BXbL"]], ["購物地點・攻略", "羽田機場寶可夢", ["DZhuf9VTzTX"]], ["購物地點・攻略", "燈箱磁鐵貼（2 則同款）", ["DbWVPihz1Rq", "DbTNNIwTLS3"]], ["綜合清單", "日本戰利品開箱", ["Dap30gTSTwo"]], ["綜合清單", "2026 日本必買清單", ["DY2JQ1kP6lt"]], ["綜合清單", "日本必買 100 樣", ["DVbeCmjEjMF"]], ["綜合清單", "Lexus 日本旅行廣告", ["DZXuEeEo4kT"]], ["必逛好店", "BEAMS 淺草寺快閃（至 2027/2/28）", ["De_40kMvjyk"]], ["必逛好店", "CENE 日系飾品", ["DeQk0bnS-Bt"]], ["必逛好店", "證交所股票御守", ["Ddqn3UpDK-U"]], ["必逛好店", "東京 4 家平價女鞋路線", ["DdG2AywzvEi"]], ["必逛好店", "思夢樂必逛", ["DdG0CMqBniB"]], ["必逛好店", "表參道 Google Store", ["DcSyDm4SWUH"]], ["必逛好店", "上野多慶屋", ["DZCcKL4JUdc"]], ["必逛好店", "日本人不去的新宿地方", ["DcERFkfhZxg"]], ["必逛好店", "富士山哭泣君", ["DXjsBTqSL6P"]], ["必逛好店", "Offen 日系女鞋", ["Db5YPqvzxBQ"]], ["必逛好店", "財運神社（洗錢）", ["Db5g95yTyNr"]], ["必逛好店", "江戶東京建物園", ["DU4fk_XkmdW"]], ["必逛好店", "飯倉熊野神社（水占卜）", ["Da1678PTwFG"]], ["必逛好店", "雨具 9 樣（HONDA 聯名雨衣）", ["DZZuraHzXpu"]], ["必逛好店", "FAMIMA PARK 麻布台", ["DanDHENh1fL"]], ["必逛好店", "新宿 5 公里散步路線", ["Da6efjaCdib"]], ["必逛好店", "銀座茅乃舍（隈研吾）", ["DZFPrHAyG7y"]], ["必逛好店", "FamilyMart 麻布台旗艦店", ["DasTWB3vFaN"]], ["必逛好店", "麻布台 TEAPON", ["DXxo3ohhu_w"]], ["必逛好店", "東京 6 間獨旅咖啡廳", ["DYFGOV5NW1v"]], ["必逛好店", "爬樓梯上東京鐵塔（¥1,500）", ["DYMzCTdz3EH"]], ["必逛好店", "歐風紅茶專賣店", ["DZptnxlhtrc"]], ["必逛好店", "NEWoMan 高輪", ["DbUt5KcJC63"]], ["必逛好店", "WORKMAN", ["DUknhNHk_sR"]], ["必逛好店", "麻布台 Dashi Okume 高湯體驗（要預約）", ["DZ2MN0yBX9A"]], ["必逛好店", "Found MUJI 青山", ["DUVn-BBk-SN"]]];   // [group, title, [ig codes]]
+const SHOPGROUPS = ["藥妝・保養・彩妝","髮品","無印良品／3COINS／大創／Seria","食品・調味料・抹茶","廚房・家居","購物地點・攻略","綜合清單"];
+const placeFor = codes => PLACES.find(p=>codes.some(c=>p.ig.includes("/p/"+c+"/")));
+const url = (s,p) => ({ig:"https://www.instagram.com/",fb:"https://www.facebook.com/",yt:"https://www.youtube.com/shorts/"})[s]+p;
+const SRCNAME = {ig:"Instagram",fb:"Facebook",yt:"YouTube"};
+const srcOf = link => link.includes("youtube")?"yt":link.includes("facebook")?"fb":"ig";
+// YouTube 「日本」清單裡只有影片、沒寫店名地址的合輯
+const YTFOOD = [["oeQnL42r2lM","淺草美食懶人包","Eviday伊米塔"],["9ocQiv6XruY","淺草 5 間必吃（文字燒、100 円壽司、炸肉餅）","看的到、聽說的"],["jipS9JQfkHc","東京 5 間必吃拉麵","wenwen"]];
+const FOODTAGS = ["甜點","雞肉","豬肉","牛肉","海鮮","麵飯","湯鍋","蔬菜豆腐","減脂"];
+const CATS = {
+  "日本必吃":{k:"food",e:"🍣"}, "東京必喝咖啡":{k:"coffee",e:"☕"}, "日本拍照景點":{k:"photo",e:"📸"},
+  "日本必逛":{k:"go",e:"🏬"}, "日本必買":{k:"buy",e:"🛍️"}
+};
+const ORDER = ["日本必吃","東京必喝咖啡","日本拍照景點","日本必逛","日本必買"];
+const SPOTS = [
+  ["麻布台之丘",35.6604,139.7404,"港區"],["銀座四丁目",35.6717,139.7650,"中央區"],["新宿站",35.6896,139.7006,"新宿區"],
+  ["澀谷站",35.6580,139.7016,"澀谷區"],["中目黑站",35.6440,139.6990,"目黑區"],["日本橋",35.6840,139.7745,"中央區"],
+  ["淺草寺",35.7148,139.7967,"台東區"],["札幌すすきの",43.0556,141.3536,"北海道"],["小樽運河",43.1993,141.0024,"北海道"],
+  ["河口湖站",35.4983,138.7686,"山梨"],["山中湖",35.4150,138.8750,"山梨"]
+];
+const cc = c => `var(--c-${CATS[c].k})`;
+const state = { tab:"near", loc:0, mins:10, on:Object.fromEntries(ORDER.map(c=>[c,true])), filter:"all", quiet:false, fseg:"rec", ftag:"", q:"", tseg:"spots", sseg:"buy", sgrp:"", sq:"" };
+try { const s = JSON.parse(localStorage.getItem("pocketmap")||"{}"); Object.assign(state, s); } catch(e){}
+const save = () => { try { localStorage.setItem("pocketmap", JSON.stringify({loc:state.loc,mins:state.mins,on:state.on})); } catch(e){} };
+
+const R = 6371000, rad = d => d*Math.PI/180;
+function dist(a,o,b,p){const x=rad(b-a),y=rad(p-o),h=Math.sin(x/2)**2+Math.cos(rad(a))*Math.cos(rad(b))*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+const walkMin = m => Math.max(1, Math.round(m*1.2/80));   // 80 m/min, 1.2 = street detour
+const radius = () => state.mins*80/1.2;
+const here = () => state.gps ? ["GPS", state.gps.lat, state.gps.lng, "GPS"] : SPOTS[state.loc];
+let gpsWatch=null;
+function startGPS(){
+  if(!navigator.geolocation){ state.gpsErr='這台裝置不支援定位'; render(); return; }
+  state.gpsErr=''; state.gpsWait=true; render();
+  if(gpsWatch!=null) navigator.geolocation.clearWatch(gpsWatch);
+  gpsWatch=navigator.geolocation.watchPosition(pos=>{
+    const first=!state.gps; state.gpsWait=false;
+    state.gps={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
+    render(); if(first) notify();
+  },err=>{ state.gps=null; state.gpsWait=false; state.gpsErr=err.code===1?'沒有允許定位，先用模擬位置':'抓不到定位，先用模擬位置'; render(); },
+  {enableHighAccuracy:true,maximumAge:15000,timeout:20000});
+}
+function stopGPS(){ if(gpsWatch!=null) navigator.geolocation.clearWatch(gpsWatch); gpsWatch=null; state.gps=null; state.gpsWait=false; }
+function withDist(){ const [,a,o]=here(); return PLACES.map(p=>({...p,d:dist(a,o,p.a,p.o)})).sort((x,y)=>x.d-y.d); }
+function nearby(){ return withDist().filter(p=>p.d<=radius() && state.on[p.c]); }
+const fmtM = m => m<1000 ? Math.round(m)+" m" : (m/1000).toFixed(1)+" km";
+const el = (t,props={},...kids)=>{const n=document.createElement(t);for(const[k,v]of Object.entries(props)){if(k==="class")n.className=v;else if(k==="style")n.style.cssText=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else if(k==="text")n.textContent=v;else n.setAttribute(k,v);}for(const c of kids)if(c!=null)n.append(c);return n;};
+
+const ICONS = {
+  near:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/></svg>',
+  map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+  food:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M8 7c0-1.5 1-2 1-3M12 7c0-1.5 1-2 1-3M16 7c0-1.5 1-2 1-3"/></svg>',
+  trip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V4h6v3M9 11v5M15 11v5"/></svg>'
+};
+ICONS.shop='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
+const TABS = [["near","附近"],["map","地圖"],["food","美食"],["shop","購物"],["trip","旅行"]];
+
+function renderTabs(){
+  const t=document.getElementById("tabs"); t.textContent="";
+  for(const [k,label] of TABS){
+    const b=el("button",{type:"button",role:"tab","aria-selected":String(state.tab===k),onclick:()=>{state.tab=k;render();}});
+    b.innerHTML=ICONS[k]; b.append(el("span",{text:label})); t.append(b);
+  }
+}
+function card(p){
+  return el("button",{class:"card",type:"button",style:`--cc:${cc(p.c)}`,onclick:()=>openPlace(p)},
+    el("div",{class:"bar"}),
+    el("div",{style:"min-width:0"},el("div",{class:"nm",text:p.n}),el("div",{class:"nt",text:p.t||p.c})),
+    p.d!=null ? el("div",{class:"walk"},el("b",{text:walkMin(p.d)+" 分"}),el("span",{text:fmtM(p.d)})) : null);
+}
+function viewNear(v){
+  const list = nearby().filter(p=>state.filter==="all"||p.c===state.filter);
+  const total = nearby().length;
+  v.append(el("div",{class:"ring"},el("strong",{text:String(total)}),el("span",{text:`個地點在步行 ${state.mins} 分鐘內（約 ${Math.round(radius())} m）`})));
+  const chips=el("div",{class:"chips"});
+  chips.append(el("button",{class:"chip",type:"button","aria-pressed":String(state.filter==="all"),text:"全部",onclick:()=>{state.filter="all";render();}}));
+  for(const c of ORDER){ const n=nearby().filter(p=>p.c===c).length; if(!n) continue;
+    chips.append(el("button",{class:"chip",type:"button",style:`--cc:${cc(c)}`,"aria-pressed":String(state.filter===c),onclick:()=>{state.filter=c;render();}},el("span",{class:"dot"}),el("span",{text:`${c.replace("日本","").replace("東京","")} ${n}`})));
+  }
+  v.append(chips);
+  if(!list.length){
+    const far=withDist().filter(p=>state.on[p.c])[0];
+    v.append(el("div",{class:"empty"},el("div",{text:"這附近步行範圍內沒有收藏的地點。"}),el("div",{text:far?`最近的是「${far.n}」，${fmtM(far.d)}。`:""})));
+    return;
+  }
+  const l=el("div",{class:"list"}); list.forEach(p=>l.append(card(p))); v.append(l);
+}
+function viewMap(v){
+  const W=354,H=430,cx=W/2,cy=H/2, span=Math.max(radius()*1.45,500); const [,a,o]=here();
+  const k = (Math.min(W,H)/2)/span;
+  const pt = p => { const dx=dist(a,o,a,p.o)*Math.sign(p.o-o), dy=dist(a,o,p.a,o)*Math.sign(p.a-a); return [cx+dx*k, cy-dy*k]; };
+  const ns="http://www.w3.org/2000/svg", svg=document.createElementNS(ns,"svg"); svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.setAttribute("role","img"); svg.setAttribute("aria-label","附近地點地圖");
+  const add=(t,at)=>{const n=document.createElementNS(ns,t);for(const[x,y]of Object.entries(at))n.setAttribute(x,y);svg.append(n);return n;};
+  add("rect",{x:0,y:0,width:W,height:H,fill:"var(--sheet)"});
+  for(let i=-6;i<=6;i++){ add("line",{x1:cx+i*48+((i*17)%11),y1:0,x2:cx+i*48-((i*13)%9),y2:H,stroke:"var(--line)","stroke-width":i%3?1:3});
+                          add("line",{x1:0,y1:cy+i*52+((i*7)%13),x2:W,y2:cy+i*52-((i*11)%10),stroke:"var(--line)","stroke-width":i%2?1:3}); }
+  add("circle",{cx,cy,r:radius()*k,fill:"rgba(47,124,246,.07)",stroke:"#2f7cf6","stroke-width":1.5,"stroke-dasharray":"5 5"});
+  const t=add("text",{x:cx+radius()*k*0.71+4,y:cy-radius()*k*0.71-4,fill:"#2f7cf6","font-size":11,"font-family":"IBM Plex Mono, monospace"}); t.textContent=`${state.mins} 分`;
+  const pts = withDist().filter(p=>state.on[p.c] && p.d<span*1.1).reverse();
+  for(const p of pts){ const [x,y]=pt(p); const g=document.createElementNS(ns,"g"); g.style.cursor="pointer"; g.setAttribute("tabindex","0"); g.setAttribute("role","button"); g.setAttribute("aria-label",p.n);
+    g.addEventListener("click",()=>openPlace(p)); g.addEventListener("keydown",e=>{if(e.key==="Enter")openPlace(p);});
+    const pin=document.createElementNS(ns,"path"); pin.setAttribute("d",`M${x} ${y} c-6 -8 -9 -11 -9 -15 a9 9 0 0 1 18 0 c0 4 -3 7 -9 15z`); pin.setAttribute("fill",cc(p.c)); pin.setAttribute("stroke","var(--sheet)"); pin.setAttribute("stroke-width","1.5");
+    const ci=document.createElementNS(ns,"circle"); ci.setAttribute("cx",x); ci.setAttribute("cy",y-15); ci.setAttribute("r",3.2); ci.setAttribute("fill","var(--sheet)");
+    g.append(pin,ci); svg.append(g); }
+  add("circle",{cx,cy,r:13,fill:"rgba(47,124,246,.2)"}); add("circle",{cx,cy,r:7,fill:"#2f7cf6",stroke:"#fff","stroke-width":2.5});
+  const box=el("div",{class:"mapbox"}); box.append(svg);
+  box.append(el("div",{class:"maplegend"},el("span",{text:`圈內 ${nearby().length} 個 · 點圖釘看詳情`}),el("span",{text:"示意地圖"})));
+  v.append(box);
+}
+function segbar(opts,cur,set){
+  const b=el("div",{class:"segbar"});
+  for(const [k,label] of opts) b.append(el("button",{type:"button","aria-pressed":String(cur===k),text:label,onclick:()=>{set(k);render();}}));
+  return b;
+}
+function item(s,path,title,sub){
+  return el("button",{class:"item",type:"button",onclick:()=>openLink(s,path,title,sub)},
+    el("div",{style:"min-width:0"},el("div",{class:"nm",text:title}),el("div",{class:"sub"},el("span",{class:"src "+s,text:s.toUpperCase()}),el("span",{text:sub}))),
+    el("span",{"aria-hidden":"true",style:"color:var(--muted)",text:"›"}));
+}
+function openLink(s,path,title,sub){
+  openSheet(sh=>{
+    sh.append(el("h4",{text:title}));
+    sh.append(el("div",{class:"meta"},el("span",{class:"src "+s,text:SRCNAME[s]}),el("span",{text:sub})));
+    sh.append(el("div",{class:"btns",style:"grid-template-columns:1fr"},el("a",{class:"btn primary",href:url(s,path),target:"_blank",rel:"noopener",text:"打開原文影片"})));
+  });
+}
+function searchBox(key="q",ph="搜尋食譜，例如：蛋糕、雞腿、餛飩"){
+  const i=el("input",{class:"search",id:key,type:"search",placeholder:ph,"aria-label":"搜尋"});
+  i.value=state[key];
+  i.addEventListener("input",()=>{state[key]=i.value;const pos=i.selectionStart;render();const n=document.getElementById(key);if(n){n.focus();n.setSelectionRange(pos,pos);}});
+  return i;
+}
+function shopItem(s){
+  const [grp,title,codes]=s; const p=placeFor(codes);
+  if(p){ const [,a,o]=here(); const d=dist(a,o,p.a,p.o);
+    return el("button",{class:"item",type:"button",onclick:()=>openPlace({...p,d})},
+      el("div",{style:"min-width:0"},el("div",{class:"nm",text:title}),el("div",{class:"sub"},el("span",{class:"src ig",text:"IG"}),el("span",{class:"tag",style:`--cc:${cc(p.c)};padding:0 8px`},el("span",{class:"dot"}),el("span",{text:"地圖上"})))),
+      el("div",{class:"walk"},el("b",{text:walkMin(d)+" 分"}),el("span",{text:fmtM(d)}))); }
+  const more=codes.length>1?` · ${codes.length} 則貼文`:"";
+  return item("ig","p/"+codes[0]+"/",title,grp+more);
+}
+function viewShop(v){
+  const buy=SHOPPING.filter(s=>s[0]!=="必逛好店"), go=SHOPPING.filter(s=>s[0]==="必逛好店");
+  v.append(segbar([["buy",`必買 ${buy.length}`],["go",`必逛 ${go.length}`]],state.sseg,k=>state.sseg=k));
+  v.append(searchBox("sq","搜尋，例如：無印、髮油、抹茶"));
+  const q=state.sq.trim().toLowerCase();
+  if(state.sseg==="buy"){
+    const chips=el("div",{class:"chips"});
+    chips.append(el("button",{class:"chip",type:"button","aria-pressed":String(!state.sgrp),text:"全部",onclick:()=>{state.sgrp="";render();}}));
+    for(const g of SHOPGROUPS){const n=buy.filter(s=>s[0]===g).length;chips.append(el("button",{class:"chip",type:"button","aria-pressed":String(state.sgrp===g),text:`${g.split("・")[0].split("／")[0]} ${n}`,onclick:()=>{state.sgrp=state.sgrp===g?"":g;render();}}));}
+    v.append(chips);
+    const list=buy.filter(s=>(!state.sgrp||s[0]===state.sgrp)&&(!q||(s[0]+s[1]).toLowerCase().includes(q)));
+    if(!list.length){v.append(el("div",{class:"empty",text:"找不到符合的商品，換個關鍵字試試。"}));return;}
+    for(const g of SHOPGROUPS){ const items=list.filter(s=>s[0]===g); if(!items.length) continue;
+      v.append(el("div",{class:"sec"},el("span",{text:g}),el("em",{text:String(items.length)})));
+      const l=el("div",{class:"list"}); items.forEach(s=>l.append(shopItem(s))); v.append(l); }
+  } else {
+    const list=go.filter(s=>!q||s[1].toLowerCase().includes(q));
+    v.append(el("div",{class:"count",text:"有標「地圖上」的，走到附近會提醒你"}));
+    const l=el("div",{class:"list"}); list.forEach(s=>l.append(shopItem(s))); v.append(l);
+  }
+}
+function viewFood(v){
+  const jp=withDist().filter(p=>p.c==="日本必吃"||p.c==="東京必喝咖啡");
+  v.append(segbar([["rec",`食譜 ${RECIPES.length}`],["jp",`日本餐廳 ${jp.length}`],["tw",`台灣店家 ${SHOPS.length}`]],state.fseg,k=>state.fseg=k));
+  if(state.fseg==="rec"){
+    v.append(searchBox());
+    const chips=el("div",{class:"chips"});
+    chips.append(el("button",{class:"chip",type:"button","aria-pressed":String(!state.ftag),text:"全部",onclick:()=>{state.ftag="";render();}}));
+    for(const t of FOODTAGS){const n=RECIPES.filter(r=>r[4].split(",").includes(t)).length;chips.append(el("button",{class:"chip",type:"button","aria-pressed":String(state.ftag===t),text:`${t} ${n}`,onclick:()=>{state.ftag=state.ftag===t?"":t;render();}}));}
+    v.append(chips);
+    const q=state.q.trim().toLowerCase();
+    const list=RECIPES.filter(r=>(!state.ftag||r[4].split(",").includes(state.ftag))&&(!q||(r[2]+r[3]+r[4]).toLowerCase().includes(q)));
+    v.append(el("div",{class:"count",text:`${list.length} 則`}));
+    if(!list.length){v.append(el("div",{class:"empty",text:"找不到符合的食譜，換個關鍵字試試。"}));return;}
+    const l=el("div",{class:"list"}); list.forEach(r=>l.append(item(r[0],r[1],r[2],[r[3],r[4].replace(/,/g," · ")].filter(Boolean).join(" · ")))); v.append(l);
+  } else if(state.fseg==="jp"){
+    v.append(el("div",{class:"count",text:`離「${here()[0]}」由近到遠`}));
+    const l=el("div",{class:"list"}); jp.forEach(p=>l.append(card(p))); v.append(l);
+    v.append(el("div",{class:"sec"},el("span",{text:"YouTube 美食合輯（店名在影片裡）"}),el("em",{text:String(YTFOOD.length)})));
+    const l2=el("div",{class:"list"}); YTFOOD.forEach(([id,t,ch])=>l2.append(item("yt",id,t,ch))); v.append(l2);
+  } else {
+    const areas=[...new Set(SHOPS.map(s=>s[4]))];
+    for(const a of areas){ const items=SHOPS.filter(s=>s[4]===a);
+      v.append(el("div",{class:"sec"},el("span",{text:a}),el("em",{text:String(items.length)})));
+      const l=el("div",{class:"list"}); items.forEach(s=>l.append(item(s[0],s[1],s[2],s[3]))); v.append(l); }
+  }
+}
+function viewTrip(v){
+  v.append(segbar([["spots",`拍照景點 ${PLACES.filter(p=>p.c==="日本拍照景點").length}`],["tips",`攻略 ${TIPS.length}`]],state.tseg,k=>state.tseg=k));
+  if(state.tseg==="spots"){
+    const d=withDist();
+    for(const c of ["日本拍照景點"]){ const items=d.filter(p=>p.c===c);
+      v.append(el("div",{class:"sec",style:`--cc:${cc(c)}`},el("span",{class:"dot"}),el("span",{text:c}),el("em",{text:String(items.length)})));
+      const l=el("div",{class:"list"}); items.forEach(p=>l.append(card(p))); v.append(l); }
+  } else {
+    for(const g of ["入境・交通","省錢・好康","行程","韓國","其他"]){ const items=TIPS.filter(t=>t[3]===g);
+      v.append(el("div",{class:"sec"},el("span",{text:g}),el("em",{text:String(items.length)})));
+      const l=el("div",{class:"list"}); items.forEach(t=>l.append(item(t[0],t[1],t[2],g))); v.append(l); }
+  }
+}
+function viewSet(v){
+  const s1=el("div",{class:"set"});
+  const seg=el("div",{class:"seg"});
+  for(const m of [5,10,15]) seg.append(el("button",{type:"button","aria-pressed":String(state.mins===m),text:m+" 分",onclick:()=>{state.mins=m;save();render();openSettings();}}));
+  s1.append(el("div",{class:"row"},el("span",{text:"提醒範圍（步行）"}),seg));
+  const q=el("button",{class:"sw",type:"button",role:"switch","aria-checked":String(state.quiet),"aria-label":"勿擾",onclick:()=>{state.quiet=!state.quiet;render();openSettings();}});
+  s1.append(el("div",{class:"row"},el("span",{text:"同一地點一天只提醒一次"}),el("button",{class:"sw",type:"button",role:"switch","aria-checked":"true","aria-label":"一天一次"})));
+  s1.append(el("div",{class:"row"},el("span",{text:"勿擾（暫停所有提醒）"}),q));
+  v.append(el("div",{class:"sec",text:"提醒"}),s1);
+  const s2=el("div",{class:"set"});
+  for(const c of ORDER){ const n=PLACES.filter(p=>p.c===c).length;
+    s2.append(el("div",{class:"row",style:`--cc:${cc(c)}`},el("span",{style:"display:flex;gap:8px;align-items:center"},el("span",{class:"dot"}),el("span",{text:`${c}（${n}）`})),
+      el("button",{class:"sw",type:"button",role:"switch","aria-checked":String(state.on[c]),"aria-label":c,onclick:()=>{state.on[c]=!state.on[c];save();render();openSettings();}}))); }
+  v.append(el("div",{class:"sec",text:"要提醒哪些分類"}),s2);
+  v.append(el("div",{class:"empty",text:`資料來源：Instagram @cardiganz、Facebook 已儲存、YouTube @cardi7259 · ${PLACES.length} 個地點、${RECIPES.length} 則食譜`}));
+}
+function openSettings(){
+  openSheet(s=>{ s.append(el("h4",{text:"設定"})); const box=el("div",{style:"max-height:520px;overflow:auto"}); viewSet(box); s.append(box); });
+}
+document.getElementById("gear").addEventListener("click",openSettings);
+function render(){
+  renderTabs();
+  document.getElementById("title").textContent = Object.fromEntries(TABS)[state.tab];
+  document.getElementById("locname").textContent = state.gps ? `GPS（±${Math.round(state.gps.acc)} m）` : state.gpsWait ? "定位中…" : here()[0] + (state.gpsErr ? "（" + state.gpsErr + "）" : "");
+  document.getElementById("locmode").textContent = state.gps ? "GPS ▾" : "模擬 ▾";
+  const v=document.getElementById("view"); v.textContent=""; v.scrollTop=0;
+  ({near:viewNear,map:viewMap,food:viewFood,shop:viewShop,trip:viewTrip})[state.tab](v);
+}
+
+let bTimer;
+function notify(){
+  const b=document.getElementById("banner"); b.classList.remove("show");
+  const n=nearby(); if(!n.length || state.quiet) return;
+  const f=n[0];
+  document.getElementById("bh").textContent=`附近步行 ${state.mins} 分鐘內有 ${n.length} 個地點`;
+  document.getElementById("bb").textContent=`最近：${f.n} · 步行 ${walkMin(f.d)} 分`;
+  clearTimeout(bTimer); setTimeout(()=>b.classList.add("show"),350); bTimer=setTimeout(()=>b.classList.remove("show"),6500);
+}
+document.getElementById("banner").addEventListener("click",()=>{document.getElementById("banner").classList.remove("show");state.tab="near";state.filter="all";render();});
+
+const sheet=document.getElementById("sheet"), scrim=document.getElementById("scrim");
+function openSheet(build){ sheet.classList.remove("tall"); sheet.textContent=""; sheet.append(el("div",{class:"grab"})); build(sheet); sheet.classList.add("on"); scrim.classList.add("on"); }
+function closeSheet(){ sheet.classList.remove("on"); scrim.classList.remove("on"); }
+scrim.addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();});
+function openPlace(p){
+  const [,a,o]=here(); const d=p.d!=null?p.d:dist(a,o,p.a,p.o);
+  openSheet(s=>{
+    s.append(el("h4",{text:p.n}));
+    s.append(el("div",{class:"meta",style:`--cc:${cc(p.c)}`},el("span",{class:"tag"},el("span",{class:"dot"}),el("span",{text:p.c})),el("span",{text:`步行約 ${walkMin(d)} 分 · ${fmtM(d)}`})));
+    s.append(el("p",{text:p.t||"這篇貼文沒有寫細節，點 IG 原文看。"}));
+    s.append(el("div",{class:"btns"},
+      el("a",{class:"btn primary",href:`https://www.google.com/maps/dir/?api=1&destination=${p.a},${p.o}&travelmode=walking`,target:"_blank",rel:"noopener",text:"走路導航"}),
+      el("a",{class:"btn ghost",href:p.ig,target:"_blank",rel:"noopener",text:`看 ${SRCNAME[srcOf(p.ig)]} 原文`})));
+  });
+}
+document.getElementById("locbtn").addEventListener("click",()=>openSheet(s=>{
+  s.append(el("h4",{text:"位置"}));
+  s.append(el("div",{class:"btns",style:"grid-template-columns:1fr;margin-bottom:12px"},el("button",{class:"btn primary",type:"button",text:state.gps?"目前使用 GPS 定位 ✓":"使用 GPS 定位",onclick:()=>{closeSheet();startGPS();}})));
+  s.append(el("p",{text:"或選一個模擬位置，先看看那附近有什麼。"}));
+  const box=el("div",{class:"preset"});
+  SPOTS.forEach(([n,,,area],i)=>{ box.append(el("button",{type:"button",onclick:()=>{stopGPS();state.loc=i;state.filter="all";save();closeSheet();render();notify();}},el("b",{text:n}),el("span",{text:area}))); });
+  s.append(box);
+}));
+
+document.getElementById("legend").append(...ORDER.map(c=>el("span",{class:"tag",style:`--cc:${cc(c)}`},el("span",{class:"dot"}),el("span",{text:`${c} ${PLACES.filter(p=>p.c===c).length}`}))));
+/* ---------- 問 Claude：用 App 裡的收藏回答問題 ---------- */
+const chat = { turns:[], ctl:null, busy:false, sample:null };
+// every name Claude may cite as 【name】, mapped to what tapping it opens
+const REFS = new Map();
+PLACES.forEach(p=>REFS.set(p.n,()=>{const [,a,o]=here();openPlace({...p,d:dist(a,o,p.a,p.o)});}));
+RECIPES.forEach(r=>REFS.set(r[2],()=>openLink(r[0],r[1],r[2],r[3])));
+SHOPS.forEach(s=>REFS.set(s[2],()=>openLink(s[0],s[1],s[2],s[3])));
+TIPS.forEach(t=>REFS.set(t[2],()=>openLink(t[0],t[1],t[2],t[3])));
+SHOPPING.forEach(s=>{ if(!REFS.has(s[1])) REFS.set(s[1],()=>{const p=placeFor(s[2]); if(p){const [,a,o]=here();openPlace({...p,d:dist(a,o,p.a,p.o)});} else openLink("ig","p/"+s[2][0]+"/",s[1],s[0]);}); });
+YTFOOD.forEach(([id,t,ch])=>REFS.set(t,()=>openLink("yt",id,t,ch)));
+
+function context(){
+  const [loc,a,o]=here(); const near=nearby();
+  const L=[];
+  L.push(`你是「日本口袋地圖」App 裡的助理。使用者是 Jenny，她把 Instagram、Facebook、YouTube 上存的旅行、美食、購物內容整理在這個 App 裡。只根據下面的收藏回答；收藏裡沒有的就直接說沒有，可以補一句一般常識，但要標明「不在你的收藏裡」。`);
+  L.push(`回答規則：用繁體中文，簡短直接（手機畫面，最多約 8 行）。提到收藏裡的項目時，一定用全形括號把「完全相同的名稱」包起來，例如【亀や 新宿店（思出橫丁）】，App 會把它變成可以點的連結。步行分鐘是直線距離估算。`);
+  L.push(`\n目前位置（模擬）：${loc}。提醒範圍：步行 ${state.mins} 分鐘。範圍內 ${near.length} 個：${near.map(p=>`${p.n}（${walkMin(p.d)} 分）`).join("、")||"無"}`);
+  L.push(`\n# 日本地點（名稱｜分類｜重點｜離目前位置步行分鐘）`);
+  withDist().forEach(p=>L.push(`${p.n}｜${p.c}｜${p.t||"-"}｜${walkMin(p.d)}`));
+  L.push(`\n# 日本必買／必逛（分組｜名稱）`);
+  SHOPPING.forEach(s=>L.push(`${s[0]}｜${s[1]}`));
+  L.push(`\n# 食譜（名稱｜作者｜食材標籤｜來源）`);
+  RECIPES.forEach(r=>L.push(`${r[2]}｜${r[3]||"-"}｜${r[4]||"-"}｜${SRCNAME[r[0]]}`));
+  L.push(`\n# 台灣美食店家（名稱｜地區）`);
+  SHOPS.forEach(s=>L.push(`${s[2]}｜${s[4]}`));
+  L.push(`\n# YouTube 美食合輯（只有影片，店名不在文字裡）`);
+  YTFOOD.forEach(y=>L.push(y[1]));
+  L.push(`\n# 旅行攻略（分組｜名稱）`);
+  TIPS.forEach(t=>L.push(`${t[3]}｜${t[2]}`));
+  return L.join("\n");
+}
+function renderAnswer(box,text){
+  box.textContent="";
+  const parts=text.split(/【([^】]{1,60})】/);
+  parts.forEach((part,i)=>{
+    if(i%2===0){ box.append(part); return; }
+    const open=REFS.get(part.trim());
+    box.append(open ? el("button",{class:"ref",type:"button",text:part,onclick:open}) : `【${part}】`);
+  });
+}
+const ERRCOPY = {
+  not_granted:"你沒有允許這個 App 使用 Claude，所以聊天關閉了。", sampling_disabled:"這個帳號目前不能使用 Claude。",
+  rate_limited:"問得太快或用量到上限了，稍等一下再問。", session_expired:"登入過期了，請重新登入 claude.ai。",
+  refused:"Claude 沒有回答這個問題，換個問法試試。", empty_completion:"Claude 沒有回覆，換個問法試試。",
+  prompt_too_large:"對話太長了，按「清除」重新開始。"
+};
+const SUGG = ["我現在附近有什麼好吃的？","不用烤箱的甜點有哪些？","去藥妝店要買什麼？幫我列清單","第一次去日本入境要準備什麼？","推薦三個拍東京鐵塔的地方"];
+function openChat(){
+  openSheet(s=>{
+    sheet.classList.add("tall");
+    const log=el("div",{class:"chatlog",id:"chatlog"});
+    const head=el("div",{class:"chathead"},el("h4",{text:"問 Claude"}),
+      el("button",{class:"chip",type:"button",text:"清除",onclick:()=>{chat.ctl?.abort();chat.turns=[];openChat();}}));
+    s.append(head, el("small",{style:"color:var(--muted);font-size:12px",text:`根據你的 ${PLACES.length} 個地點、${RECIPES.length} 則食譜、${SHOPPING.length} 項購物和 ${TIPS.length} 則攻略回答。會使用你自己的 Claude 用量。`}), log);
+    if(!chat.turns.length){
+      const sg=el("div",{class:"sugg"}); SUGG.forEach(q=>sg.append(el("button",{type:"button",text:q,onclick:()=>send(q)}))); log.append(sg);
+    }
+    for(const t of chat.turns){ const m=el("div",{class:"msg "+(t.role==="user"?"me":"ai")}); t.role==="user"?m.textContent=t.content:renderAnswer(m,t.content); log.append(m); }
+    const ta=el("textarea",{id:"chatinput",rows:"1",placeholder:"例如：銀座附近有什麼必買？","aria-label":"輸入問題"});
+    ta.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); send(ta.value); } });
+    const btn=el("button",{type:"button",id:"chatbtn",class:chat.busy?"stop":"",text:chat.busy?"停止":"送出",onclick:()=>{ chat.busy?chat.ctl?.abort():send(ta.value); }});
+    s.append(el("div",{class:"composer"},ta,btn));
+    log.scrollTop=log.scrollHeight;
+  });
+}
+async function send(q){
+  q=(q||"").trim(); if(!q||chat.busy||!chat.sample) return;
+  chat.turns.push({role:"user",content:q});
+  chat.busy=true; chat.ctl=new AbortController(); openChat();
+  const log=document.getElementById("chatlog");
+  const box=el("div",{class:"msg ai wait",text:"思考中…"}); log.append(box); log.scrollTop=log.scrollHeight;
+  const turns=chat.turns.slice(-10);
+  try{
+    const ask=chat.sample;
+    const {text,truncated}=await ask([{role:"user",content:context()},...(turns[0].role==="assistant"?turns.slice(1):turns)],{
+      cache:false, signal:chat.ctl.signal,
+      onText:({text})=>{ box.classList.remove("wait"); renderAnswer(box,text); log.scrollTop=log.scrollHeight; }
+    });
+    chat.turns.push({role:"assistant",content:text+(truncated?"\n（回答太長被截斷了，可以問得更具體一點。）":"")});
+  }catch(e){
+    if(e.text) chat.turns.push({role:"assistant",content:e.text});
+    if(e.code!=="cancelled"){ const msg=ERRCOPY[e.code]||"連線出了問題，可以再問一次。"; chat.turns.push({role:"assistant",content:"⚠️ "+msg}); }
+    if(e.code==="not_granted"||e.code==="sampling_disabled"){ document.getElementById("fab").hidden=true; chat.sample=null; }
+  }finally{
+    chat.busy=false; if(sheet.classList.contains("tall")) openChat();
+  }
+}
+document.getElementById("fab").addEventListener("click",openChat);
+(async()=>{ try{ chat.sample = window.claude ? await window.claude.use("sample") : null; }catch(e){ chat.sample=null; }
+  if(chat.sample) document.getElementById("fab").hidden=false; })();
+
+document.getElementById("nRec").textContent=RECIPES.length;
+document.getElementById("nTip").textContent=TIPS.length;
+document.getElementById("nBuy").textContent=SHOPPING.filter(s=>s[0]!=="必逛好店").length;
+render(); startGPS();
+</script>
+
+</body></html>
