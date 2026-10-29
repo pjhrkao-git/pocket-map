@@ -469,7 +469,8 @@ const save = () => { try { localStorage.setItem("pocketmap", JSON.stringify({loc
 
 const R = 6371000, rad = d => d*Math.PI/180;
 function dist(a,o,b,p){const x=rad(b-a),y=rad(p-o),h=Math.sin(x/2)**2+Math.cos(rad(a))*Math.cos(rad(b))*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
-const walkMin = m => Math.max(1, Math.round(m*1.2/80));   // 80 m/min, 1.2 = street detour
+const walkMin = m => Math.max(1, Math.round(m*1.2/80));
+const walkTxt = m => { const n=walkMin(m); return n<120 ? n+" 分" : n<60*48 ? Math.round(n/60)+" 小時" : "很遠"; };   // 80 m/min, 1.2 = street detour
 const radius = () => state.mins*80/1.2;
 const here = () => state.gps ? ["GPS", state.gps.lat, state.gps.lng, "GPS"] : SPOTS[state.loc];
 let gpsWatch=null;
@@ -480,7 +481,7 @@ function startGPS(){
   gpsWatch=navigator.geolocation.watchPosition(pos=>{
     const first=!state.gps; state.gpsWait=false;
     state.gps={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
-    render(); if(first) notify();
+    window.__keepScroll=true; render(); window.__keepScroll=false; if(first) notify();
   },err=>{ state.gps=null; state.gpsWait=false; state.gpsErr=err.code===1?'沒有允許定位，先用模擬位置':'抓不到定位，先用模擬位置'; render(); },
   {enableHighAccuracy:true,maximumAge:15000,timeout:20000});
 }
@@ -510,7 +511,7 @@ function card(p){
   return el("button",{class:"card",type:"button",style:`--cc:${cc(p.c)}`,onclick:()=>openPlace(p)},
     el("div",{class:"bar"}),
     el("div",{style:"min-width:0"},el("div",{class:"nm",text:p.n}),el("div",{class:"nt",text:p.t||p.c})),
-    p.d!=null ? el("div",{class:"walk"},el("b",{text:walkMin(p.d)+" 分"}),el("span",{text:fmtM(p.d)})) : null);
+    p.d!=null ? el("div",{class:"walk"},el("b",{text:walkTxt(p.d)}),el("span",{text:fmtM(p.d)})) : null);
 }
 function viewNear(v){
   const list = nearby().filter(p=>state.filter==="all"||p.c===state.filter);
@@ -579,7 +580,7 @@ function shopItem(s){
   if(p){ const [,a,o]=here(); const d=dist(a,o,p.a,p.o);
     return el("button",{class:"item",type:"button",onclick:()=>openPlace({...p,d})},
       el("div",{style:"min-width:0"},el("div",{class:"nm",text:title}),el("div",{class:"sub"},el("span",{class:"src ig",text:"IG"}),el("span",{class:"tag",style:`--cc:${cc(p.c)};padding:0 8px`},el("span",{class:"dot"}),el("span",{text:"地圖上"})))),
-      el("div",{class:"walk"},el("b",{text:walkMin(d)+" 分"}),el("span",{text:fmtM(d)}))); }
+      el("div",{class:"walk"},el("b",{text:walkTxt(d)}),el("span",{text:fmtM(d)}))); }
   const more=codes.length>1?` · ${codes.length} 則貼文`:"";
   return item("ig","p/"+codes[0]+"/",title,grp+more);
 }
@@ -669,8 +670,9 @@ function render(){
   document.getElementById("title").textContent = Object.fromEntries(TABS)[state.tab];
   document.getElementById("locname").textContent = state.gps ? `GPS（±${Math.round(state.gps.acc)} m）` : state.gpsWait ? "定位中…" : here()[0] + (state.gpsErr ? "（" + state.gpsErr + "）" : "");
   document.getElementById("locmode").textContent = state.gps ? "GPS ▾" : "模擬 ▾";
-  const v=document.getElementById("view"); v.textContent=""; v.scrollTop=0;
+  const v=document.getElementById("view"); const keep=window.__keepScroll?v.scrollTop:0; v.textContent="";
   ({near:viewNear,map:viewMap,food:v=>{viewFood(v);importedSection(v,'food');},shop:v=>{viewShop(v);importedSection(v,'shop');},trip:v=>{viewTrip(v);importedSection(v,'trip');}})[state.tab](v);
+  if(keep) v.scrollTop=keep;
 }
 
 let bTimer;
@@ -693,7 +695,7 @@ function openPlace(p){
   const [,a,o]=here(); const d=p.d!=null?p.d:dist(a,o,p.a,p.o);
   openSheet(s=>{
     s.append(el("h4",{text:p.n}));
-    s.append(el("div",{class:"meta",style:`--cc:${cc(p.c)}`},el("span",{class:"tag"},el("span",{class:"dot"}),el("span",{text:p.c})),el("span",{text:`步行約 ${walkMin(d)} 分 · ${fmtM(d)}`})));
+    s.append(el("div",{class:"meta",style:`--cc:${cc(p.c)}`},el("span",{class:"tag"},el("span",{class:"dot"}),el("span",{text:p.c})),el("span",{text:`步行約 ${walkTxt(d)} · ${fmtM(d)}`})));
     s.append(el("p",{text:p.t||"這篇貼文沒有寫細節，點 IG 原文看。"}));
     s.append(el("div",{class:"btns"},
       el("a",{class:"btn primary",href:`https://www.google.com/maps/dir/?api=1&destination=${p.a},${p.o}&travelmode=walking`,target:"_blank",rel:"noopener",text:"走路導航"}),
