@@ -836,6 +836,9 @@ function findAddress(text){
 }
 let lastGeo = 0;
 async function geocode(q, signal){
+  // 日本門牌（銀座6-4-17 這種）國土地理院找得到、OpenStreetMap 常常找不到，先問國土地理院
+  try { const j = await (await fetch("https://msearch.gsi.go.jp/address-search/AddressSearch?q="+encodeURIComponent(q),{signal})).json();
+        if(j[0]) return {lat:j[0].geometry.coordinates[1], lng:j[0].geometry.coordinates[0]}; } catch(e){}
   const wait = 1100 - (Date.now() - lastGeo); if(wait>0) await new Promise(r=>setTimeout(r,wait));
   lastGeo = Date.now();
   const u = "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=jp&accept-language=ja&q=" + encodeURIComponent(q);
@@ -1010,7 +1013,54 @@ async function ytImport(pls,status,go){
   go.disabled=false; go.textContent=label;
 }
 
-/* --- IG / FB export --- */
+/* --- IG / FB export ---
+   2026 年的 Meta 匯出檔是 label/value 格式：saved_posts.json 每則有網址、說明文字、擁有者；saved_collections.json 每個收藏夾有名稱＋裡面的貼文。
+   標籤名稱跟著帳號語言變（網址/URL、說明文字/Caption），所以用「值長什麼樣」判斷，不靠標籤字。舊格式用最後面的通用走訪。 */
+const fixText = s => { try{ return decodeURIComponent(escape(s)); }catch(e){ return s; } };   // Meta 匯出的 UTF-8 亂碼
+const IG_URL = /https?:\/\/(?:www\.)?instagram\.com\/(?:[^/\s"]+\/)?(?:p|reel|reels|tv)\/[A-Za-z0-9_-]+\/?/;
+const FB_URL = /https?:\/\/(?:www\.|m\.)?(?:facebook\.com|fb\.watch)\/[^\s"]+/;
+const COLL_CAT_JS = { "日本必吃":"food","東京必喝咖啡":"food","食物":"food","日本必買":"shop","日本好康":"shop",
+  "日本必逛":"trip","日本拍照景點":"trip","旅行":"trip","旅行撇步":"trip","日本住宿":"trip" };
+function strictCat(text){                                // 沒有收藏夾可以參考時：沒提到吃／買／玩就不收
+  if(/健身|減脂|減肥|深蹲|瑜[珈伽]|workout|fitness|gym|理財|股票|投資|crypto|比特幣|bitcoin|prompt|提示詞/i.test(text)) return null;
+  if(/必買|藥妝|药妆|購物|无印|無印|MUJI|3COINS|大創|唐吉|伴手禮|戰利品|開箱|好物|百貨|outlet/i.test(text)) return "shop";
+  if(/景點|拍照|神社|展望|行程|攻略|入境|退稅|交通|住宿|飯店|酒店|機場|一日遊|散步|夜景|溫泉|温泉|観光|觀光|スポット|旅行|旅遊/i.test(text)) return "trip";
+  if(/美食|必吃|好吃|餐廳|拉麵|ラーメン|壽司|寿司|燒肉|焼肉|居酒屋|咖啡|カフェ|甜點|蛋糕|食譜|料理|早餐|午餐|晚餐|定食|丼|うどん|そば|グルメ|クルメ|ランチ|麵|cafe|coffee|food|ramen/i.test(text)) return "food";
+  return null;
+}
+function titleFrom(caption,user){
+  for(const line of caption.split("\n")){
+    const t=line.replace(/[#＃]\S+/g,"").replace(/^[\s　|｜·・\-—~～📍🔥✨❤️🤍💛👉👇⬇️]+|[\s　|｜·・\-—~～]+$/g,"").replace(/\s+/g," ");
+    if(t.length>=2) return t.slice(0,40);
+  }
+  return user?"@"+user:"Instagram 貼文";
+}
+// 一則貼文 = 一組 label/value，其中有一個值是貼文網址
+function postFrom(arr){
+  if(!Array.isArray(arr)) return null;
+  const vals=arr.filter(x=>x&&typeof x.value==="string").map(x=>fixText(x.value));
+  const link=vals.find(v=>IG_URL.test(v)||FB_URL.test(v)); if(!link) return null;
+  const caption=vals.filter(v=>v!==link).sort((a,b)=>b.length-a.length)[0]||"";
+  let user=""; const walk=o=>{ if(Array.isArray(o)) o.forEach(walk); else if(o&&typeof o==="object"){ if(typeof o.value==="string"&&/^[A-Za-z0-9._]{2,30}$/.test(o.value)) user=o.value; Object.values(o).forEach(walk); } };
+  arr.filter(x=>x&&x.dict).forEach(walk);
+  return {link:(link.match(IG_URL)||link.match(FB_URL))[0], caption, user};
+}
+function readMetaExport(texts){
+  const posts=new Map();                                   // link -> {link,caption,user,groups:[]}
+  const add=(p,g)=>{ const o=posts.get(p.link)||{...p,groups:[]}; if(!o.caption&&p.caption) o.caption=p.caption; if(g&&!o.groups.includes(g)) o.groups.push(g); posts.set(p.link,o); };
+  for(const [,txt] of texts){
+    let j; try{ j=JSON.parse(txt); }catch(e){ continue; }
+    const top=Array.isArray(j)?j:Object.values(j).find(Array.isArray)||[];
+    for(const e of top){
+      const lv=e&&(e.label_values||e.string_map_data&&Object.values(e.string_map_data)); if(!Array.isArray(lv)) continue;
+      const p=postFrom(lv); if(p){ add(p,""); continue; }             // saved_posts.json
+      const name=fixText(String((lv.find(x=>typeof x.value==="string")||{}).value||"")).trim();   // saved_collections.json：第一個值是收藏夾名稱
+      for(const block of lv) for(const item of (block&&block.dict)||[]){ const q=postFrom(item&&item.dict); if(q) add(q,name||"收藏夾"); }
+    }
+  }
+  return [...posts.values()];
+}
+
 async function parseExport(file,status,list){
   status.textContent="讀取檔案…"; list.textContent="";
   let texts=[];
@@ -1022,39 +1072,44 @@ async function parseExport(file,status,list){
       if(!texts.length) for(const f of Object.values(z.files)) if(/\.json$/i.test(f.name)) texts.push([f.name,await f.async("string")]);
     } else texts.push([file.name,await file.text()]);
   }catch(e){ status.textContent="檔案讀不了："+e.message; return; }
-  // walk any JSON, collect IG/FB links with the nearest title
-  const found=[]; const LINK=/https?:\/\/(?:www\.)?(instagram\.com\/(?:p|reel|reels)\/[^\s"?]+|facebook\.com\/[^\s"]+|fb\.watch\/[^\s"]+)/;
-  const fix=s=>{ try{ return decodeURIComponent(escape(s)); }catch(e){ return s; } };   // IG exports mojibake UTF-8
-  for(const [name,txt] of texts){
-    let j; try{ j=JSON.parse(txt); }catch(e){ continue; }
-    const walk=(node,title)=>{
-      if(Array.isArray(node)){ node.forEach(n=>walk(n,title)); return; }
-      if(node&&typeof node==="object"){
-        const t=node.title||node.name||node.Name?.value||title;
-        for(const [k,v] of Object.entries(node)){
-          if(typeof v==="string"){ const m=v.match(LINK); if(m) found.push({url:m[0],title:fix(String(t||"")),file:name}); }
-          else walk(v,t);
-        }
-      }
-    };
-    walk(j,"");
-  }
-  if(!found.length){ status.textContent="這個檔案裡找不到 Instagram 或 Facebook 的貼文連結。確認下載時有勾「已儲存」。"; return; }
-  // group by collection name guess: IG puts collection name as title of a header row; fall back to file name
-  const groups={}; for(const f of found){ const g=f.title&&!/^https?:/.test(f.title)?f.title:f.file.replace(/.*\//,"").replace(/\.json$/,""); (groups[g]=groups[g]||[]).push(f); }
-  status.textContent=`找到 ${found.length} 則，分成 ${Object.keys(groups).length} 組。勾選要匯入的組，選它屬於哪一類：`;
+  if(!texts.length){ status.textContent="這個檔案裡沒有 JSON。下載時「格式」要選 JSON，不能選 HTML。"; return; }
+  const posts=readMetaExport(texts);
+  if(!posts.length){ status.textContent="這個檔案裡找不到收藏的貼文。確認下載時有勾「我的珍藏」／「Saved items and collections」，格式選 JSON。"; return; }
+  // 分組：放進收藏夾的照收藏夾，沒放的歸「沒放收藏夾」
+  const groups=new Map();
+  for(const p of posts){ const gs=p.groups.filter(Boolean); for(const g of (gs.length?gs:["沒放收藏夾"])){ if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(p); } }
+  const known=p=>{ const c=igCode(p.link); return (c&&KNOWN_IG.has(c))||PLACES.some(x=>x.ig===p.link)||IMP.items.some(i=>url(i.src,i.path)===p.link); };
+  status.textContent=`找到 ${posts.length} 則收藏、${groups.size} 組（其中 ${posts.filter(known).length} 則 App 裡本來就有）。勾要匯入的組，選它屬於哪一類：`;
   const rows=[];
-  for(const [g,arr] of Object.entries(groups)){
-    const cb=el("input",{type:"checkbox"}); const sel=el("select",{style:"font:inherit;font-size:13px"});
-    for(const [k,n] of Object.entries(CAT_NAME)) sel.append(el("option",{value:k,text:n}));
-    sel.value=guessCat(g); rows.push([cb,sel,g,arr]);
-    list.append(el("div",{class:"item"},el("div",{style:"min-width:0"},el("div",{class:"nm",text:g}),el("div",{class:"sub",text:`${arr.length} 則`})),el("div",{style:"display:flex;gap:8px;align-items:center"},sel,cb)));
+  for(const [g,arr] of [...groups].sort((a,b)=>(b[0] in COLL_CAT_JS)-(a[0] in COLL_CAT_JS)||b[1].length-a[1].length)){
+    const mapped=COLL_CAT_JS[g];
+    const cb=el("input",{type:"checkbox"}); cb.checked=!!mapped||g==="沒放收藏夾";
+    const sel=el("select",{style:"font:inherit;font-size:13px"});
+    sel.append(el("option",{value:"auto",text:"自動判斷"})); for(const [k,n] of Object.entries(CAT_NAME)) sel.append(el("option",{value:k,text:n}));
+    sel.value=mapped||"auto"; rows.push([cb,sel,g,arr]);
+    const fresh=arr.filter(p=>!known(p)).length;
+    list.append(el("div",{class:"item"},el("div",{style:"min-width:0"},el("div",{class:"nm",text:g}),el("div",{class:"sub",text:`${arr.length} 則${fresh<arr.length?`（新的 ${fresh}）`:""}`})),el("div",{style:"display:flex;gap:8px;align-items:center"},sel,cb)));
   }
+  list.append(el("div",{class:"count",style:"padding:6px 2px",text:"「自動判斷」會看貼文文字：講吃的放美食、講買的放購物、講景點行程的放旅行，都沒提到的就不收。說明文字裡有日本地址的會自動上地圖。"}));
   const go=el("button",{class:"btn primary",type:"button",text:"匯入勾選的組"});
-  go.onclick=()=>{ let n=0,d=0; for(const [cb,sel,g,arr] of rows){ if(!cb.checked) continue;
-      for(const f of arr){ const ig=f.url.match(/instagram\.com\/(.+)/); const r=addImported({src:ig?"ig":"fb",path:ig?ig[1].replace(/\/?$/,"/"):f.url,title:(f.title&&!/^https?:/.test(f.title)?f.title:"")||(ig?"Instagram 貼文":"Facebook 貼文"),group:g,cat:sel.value}); r==="dup"?d++:n++; } }
-    impSave(); render(); status.textContent=`完成：加進 ${n} 則${d?`、${d} 則本來就有`:""}。在「${[...new Set(rows.filter(r=>r[0].checked).map(r=>CAT_NAME[r[1].value]))].join("／")}」分頁最下面「我的匯入」。`; };
-  list.append(go);
+  const note=el("div",{class:"count",style:"padding:8px 2px;font-weight:600"});
+  go.onclick=async()=>{
+    go.disabled=true; let nPlace=0,nItem=0,nDup=0,nSkip=0; const done=new Set();
+    const todo=rows.filter(r=>r[0].checked).flatMap(([,sel,g,arr])=>arr.map(p=>[p,g,sel.value]));
+    for(let i=0;i<todo.length;i++){
+      const [p,g,mode]=todo[i]; if(done.has(p.link)) continue; done.add(p.link);
+      if(known(p)){ nDup++; continue; }
+      const cat=mode==="auto"?strictCat(g+" "+p.caption):mode; if(!cat){ nSkip++; continue; }
+      note.textContent=`${i+1}/${todo.length}：${titleFrom(p.caption,p.user).slice(0,24)}`;
+      const addr=findAddress(p.caption); const geo=addr?await geocode(addr):null;
+      const ig=p.link.match(/instagram\.com\/(?:[^/]+\/)?((?:p|reel|reels|tv)\/[A-Za-z0-9_-]+)/);
+      const r=addImported({src:ig?"ig":"fb",path:ig?ig[1].replace(/^reels\//,"reel/")+"/":p.link,title:titleFrom(p.caption,p.user),text:addr||p.caption,group:g,cat,lat:geo?.lat,lng:geo?.lng});
+      r==="place"?nPlace++:r==="item"?nItem++:nDup++;
+    }
+    impSave(); render(); go.disabled=false;
+    note.textContent=`完成：${nPlace} 個上了地圖、${nItem} 則加進清單、${nDup} 則本來就有${nSkip?`、${nSkip} 則跟吃買玩無關沒收`:""}。沒地址的在各分頁最下面「我的匯入」。`;
+  };
+  list.append(go,note);
 }
 
 /* --- ＋ 加入一則：貼上連結（IG／FB／YouTube），或從 iPhone 捷徑帶 ?add=連結 進來 --- */
@@ -1277,7 +1332,7 @@ importSection=function(v){
 };
 prune();
 
-const BUILD="20261029213456";
+const BUILD="20261029215451";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
