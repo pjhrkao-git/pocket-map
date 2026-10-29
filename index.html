@@ -893,16 +893,27 @@ function openImport(){
   });
 }
 
-/* --- YouTube --- */
+/* --- YouTube: whole-page redirect to Google and back (popups fail in iPhone home-screen apps) --- */
 let ytToken=null;
+try{ const t=JSON.parse(sessionStorage.getItem("yt_token")||"null"); if(t&&t.exp>Date.now()) ytToken=t.token; }catch(e){}
 function ytLogin(status,list,btn){
-  if(!window.google?.accounts?.oauth2){ status.textContent="Google 登入元件還沒載入，等一下再按一次。"; return; }
-  status.textContent="開啟 Google 登入視窗…";
-  const tc=google.accounts.oauth2.initTokenClient({ client_id:GOOGLE_CLIENT_ID, scope:"https://www.googleapis.com/auth/youtube.readonly",
-    callback:async r=>{ if(!r.access_token){ status.textContent="沒有登入成功。"; return; } ytToken=r.access_token; await ytPlaylists(status,list,btn); },
-    error_callback:e=>{ status.textContent="登入取消或失敗："+(e.type||""); } });
-  tc.requestAccessToken();
+  if(ytToken){ ytPlaylists(status,list,btn); return; }
+  const u=new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  Object.entries({client_id:GOOGLE_CLIENT_ID,redirect_uri:location.origin+location.pathname,response_type:"token",
+    scope:"https://www.googleapis.com/auth/youtube.readonly",include_granted_scopes:"true",state:"yt",prompt:"select_account"}).forEach(([k,v])=>u.searchParams.set(k,v));
+  status.textContent="前往 Google 登入…"; location.assign(u);
 }
+// back from Google: #access_token=...&state=yt
+(function(){
+  const h=new URLSearchParams(location.hash.replace(/^#/,""));
+  if(h.get("state")!=="yt") return;
+  history.replaceState(null,"",location.pathname+location.search);
+  if(h.get("access_token")){
+    ytToken=h.get("access_token");
+    try{ sessionStorage.setItem("yt_token",JSON.stringify({token:ytToken,exp:Date.now()+(+h.get("expires_in")||3600)*1000-60000})); }catch(e){}
+    setTimeout(()=>{ openImport(); const st=document.getElementById("ytStatus"); if(st) ytPlaylists(st,st.nextElementSibling,st.previousElementSibling); },300);
+  } else setTimeout(()=>{ openImport(); const st=document.getElementById("ytStatus"); if(st) st.textContent="Google 登入沒有完成："+(h.get("error")||""); },300);
+})();
 async function ytGet(path,params){
   const u=new URL("https://www.googleapis.com/youtube/v3/"+path); Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
   const r=await fetch(u,{headers:{Authorization:"Bearer "+ytToken}}); if(!r.ok) throw new Error("YouTube API "+r.status); return r.json();
