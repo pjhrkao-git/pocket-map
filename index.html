@@ -623,8 +623,8 @@ function viewFood(v){
   } else if(state.fseg==="jp"){
     v.append(el("div",{class:"count",text:`離「${here()[0]}」由近到遠`}));
     const l=el("div",{class:"list"}); jp.forEach(p=>l.append(card(p))); v.append(l);
-    v.append(el("div",{class:"sec"},el("span",{text:"YouTube 美食合輯（影片裡的店已放上地圖）"}),el("em",{text:String(YTFOOD.length)})));
-    const l2=el("div",{class:"list"}); YTFOOD.forEach(([id,t,ch])=>l2.append(item("yt",id,t,ch))); v.append(l2);
+    v.append(el("div",{class:"sec"},el("span",{text:"YouTube 美食合輯（點進去看影片裡的店）"}),el("em",{text:String(YTFOOD.length)})));
+    const l2=el("div",{class:"list"}); YTFOOD.forEach(([id,t,ch])=>l2.append(el("button",{class:"item",type:"button",onclick:()=>openVideoShops(id,t,ch)},el("div",{style:"min-width:0"},el("div",{class:"nm",text:t}),el("div",{class:"sub"},el("span",{class:"src yt",text:"YT"}),el("span",{text:`${ch} · ${videoShops(id).length+(YT_NOADDR[id]||[]).length} 家店`}))),el("span",{"aria-hidden":"true",style:"color:var(--muted)",text:"›"})))); v.append(l2);
   } else {
     const areas=[...new Set(SHOPS.map(s=>s[4]))];
     for(const a of areas){ const items=SHOPS.filter(s=>s[4]===a);
@@ -722,7 +722,7 @@ RECIPES.forEach(r=>REFS.set(r[2],()=>openLink(r[0],r[1],r[2],r[3])));
 SHOPS.forEach(s=>REFS.set(s[2],()=>openLink(s[0],s[1],s[2],s[3])));
 TIPS.forEach(t=>REFS.set(t[2],()=>openLink(t[0],t[1],t[2],t[3])));
 SHOPPING.forEach(s=>{ if(!REFS.has(s[1])) REFS.set(s[1],()=>{const p=placeFor(s[2]); if(p){const [,a,o]=here();openPlace({...p,d:dist(a,o,p.a,p.o)});} else openLink("ig","p/"+s[2][0]+"/",s[1],s[0]);}); });
-YTFOOD.forEach(([id,t,ch])=>REFS.set(t,()=>openLink("yt",id,t,ch)));
+YTFOOD.forEach(([id,t,ch])=>REFS.set(t,()=>openVideoShops(id,t,ch)));
 
 function context(){
   const [loc,a,o]=here(); const near=nearby();
@@ -1152,6 +1152,35 @@ const ADDR_FIX = {
   }
   if(moved) impSave();
 })();
+
+/* --- YouTube 美食合輯：點進去先看影片裡的店（店名從畫面讀出、地址查過），再點店看步行導航 --- */
+const YT_NOADDR = {                       // 影片裡有、但查不到地址的店
+  "9ocQiv6XruY": [["浅草寿司賢", "每貫 ¥100 起；地址查不到，在淺草站附近"]],
+  "oeQnL42r2lM": [["浅草牛光", "炙燒和牛桶飯；地址查不到"], ["浅草もんじゃ ぜんや", "文字燒；淺草站 3 分；03-6802-7444"]],
+};
+const videoShops = id => PLACES.filter(p => (p.ig||"").endsWith("/shorts/" + id));
+function openVideoShops(id, title, ch){
+  const [,a,o] = here();
+  const shops = videoShops(id).map(p => ({...p, d: dist(a,o,p.a,p.o)})).sort((x,y) => x.d - y.d);
+  openSheet(s => {
+    sheet.classList.add("tall");
+    s.append(el("h4", {text: title}));
+    s.append(el("div", {class:"meta"}, el("span", {class:"src yt", text:"YouTube"}), el("span", {text: `${ch} · ${shops.length + (YT_NOADDR[id]||[]).length} 家店`})));
+    const body = el("div", {style:"flex:1;min-height:0;overflow:auto"});
+    const l = el("div", {class:"list"});
+    for(const p of shops) l.append(el("button", {class:"item", type:"button", onclick:() => {
+        openPlace(p);
+        sheet.append(el("button", {class:"chip", type:"button", style:"margin-top:10px", text:"‹ 回到影片的店家清單", onclick:() => openVideoShops(id, title, ch)}));
+      }},
+      el("div", {style:"min-width:0"}, el("div", {class:"nm", text:p.n}), el("div", {class:"sub", text:p.t})),
+      el("div", {class:"walk"}, el("b", {text: walkTxt(p.d)}), el("span", {text: fmtM(p.d)}))));
+    for(const [n, t] of YT_NOADDR[id] || []) l.append(el("div", {class:"item", style:"cursor:default;opacity:.75"},
+      el("div", {style:"min-width:0"}, el("div", {class:"nm", text:n}), el("div", {class:"sub", text:t}))));
+    body.append(l); s.append(body);
+    s.append(el("div", {class:"btns", style:"grid-template-columns:1fr;margin-top:10px"},
+      el("a", {class:"btn primary", href:url("yt", id), target:"_blank", rel:"noopener", text:"看 YouTube 影片"})));
+  });
+}
 
 render(); startGPS();
 </script>
