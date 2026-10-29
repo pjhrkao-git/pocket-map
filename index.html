@@ -1197,8 +1197,8 @@ function viewMapReal(v){
     const mapEl=el("div",{style:"height:min(62vh,560px);border-radius:18px 18px 0 0;overflow:hidden;background:#e8eaed"});
     MAPV.legend=el("span"); MAPV.box=el("div",{class:"mapbox"}, mapEl,
       el("div",{class:"maplegend"}, MAPV.legend,
-        el("button",{class:"chip",type:"button",text:"回到我的位置",onclick:()=>{ const [,a2,o2]=here(); MAPV.map.setView([a2,o2],16); }})));
-    MAPV.map=L.map(mapEl,{zoomControl:false,attributionControl:true}).setView([a,o],16);
+        el("button",{class:"chip",type:"button",text:"回到我的位置",onclick:()=>{ const [,a2,o2]=here(); MAPV.map.setView([a2,o2],15); }})));
+    MAPV.map=L.map(mapEl,{zoomControl:false,attributionControl:true}).setView([a,o],15);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(MAPV.map);
     MAPV.map.attributionControl.setPrefix(false);
     L.control.zoom({position:"bottomright"}).addTo(MAPV.map);
@@ -1216,7 +1216,7 @@ function viewMapReal(v){
   setTimeout(()=>MAPV.map.invalidateSize(),0);
 }
 
-const BUILD="20261029202814";
+const BUILD="20261029202936";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
