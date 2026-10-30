@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-30T07:32",
+ "updated": "2026-10-31T07:32",
  "places": [
   {
    "c": "日本拍照景點",
@@ -12,6 +12,61 @@
    "g": "已儲存"
   }
  ],
- "items": [],
- "removed": []
+ "items": [
+  {
+   "src": "ig",
+   "path": "reel/DcBOO3QzuzJ/",
+   "title": "這個電擊削骨神器真的很猛",
+   "sub": "已儲存",
+   "cat": "shop",
+   "group": "已儲存"
+  },
+  {
+   "src": "ig",
+   "path": "reel/DY7ImM-yWtV/",
+   "title": "日本必買好物推薦！！",
+   "sub": "已儲存",
+   "cat": "shop",
+   "group": "已儲存"
+  },
+  {
+   "src": "ig",
+   "path": "reel/DRPJ5cugcgR/",
+   "title": "Chanel 山茶花保濕乳 日本無印就買得到平替！",
+   "sub": "已儲存",
+   "cat": "shop",
+   "group": "已儲存"
+  },
+  {
+   "src": "ig",
+   "path": "reel/DeHHnUIvpzu/",
+   "title": "如果來東京，不想再買一些「大家都有」的伴手禮，",
+   "sub": "已儲存",
+   "cat": "shop",
+   "group": "已儲存"
+  },
+  {
+   "src": "ig",
+   "path": "reel/De9Lbpbh3Va/",
+   "title": "這次跟大家分享東京怎麼買抹茶🍵",
+   "sub": "已儲存",
+   "cat": "shop",
+   "group": "已儲存"
+  },
+  {
+   "src": "ig",
+   "path": "reel/DfFB15RvdlD/",
+   "title": "🇯🇵 秋冬準備要來日本的人要來看這篇❗",
+   "sub": "已儲存",
+   "cat": "shop",
+   "group": "已儲存"
+  }
+ ],
+ "removed": [
+  "DW803vTgXYw",
+  "DZCBIz2TbmH",
+  "DbIPSXhTcT7",
+  "Dbf2quszNnQ",
+  "Dbm19gjI7Pt"
+ ]
 }
