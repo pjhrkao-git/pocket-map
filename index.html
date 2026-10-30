@@ -250,7 +250,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
     <button class="locbtn" id="locbtn" type="button"><span class="pulse"></span><span id="locname"></span><small id="locmode">更換 ›</small></button>
   </header>
   <main class="body" id="view"></main>
-  <button class="fab" id="fab" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>問 Claude</button>
+  <button class="fab" id="fab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>問 Claude</button>
   <nav class="tabs" role="tablist" id="tabs"></nav>
 
   <div class="scrim" id="scrim"></div>
@@ -767,8 +767,8 @@ function context(){
   L.push(`\n目前位置（模擬）：${loc}。提醒範圍：步行 ${state.mins} 分鐘。範圍內 ${near.length} 個：${near.map(p=>`${p.n}（${walkMin(p.d)} 分）`).join("、")||"無"}`);
   L.push(`\n# 日本地點（名稱｜分類｜重點｜離目前位置步行分鐘）`);
   withDist().forEach(p=>L.push(`${p.n}｜${p.c}｜${p.t||"-"}｜${walkMin(p.d)}`));
-  L.push(`\n# 日本必買／必逛（分組｜名稱）`);
-  SHOPPING.forEach(s=>L.push(`${s[0]}｜${s[1]}`));
+  L.push(`\n# 日本必買／必逛（分組｜名稱｜品牌｜品名｜用途｜在哪買）`);
+  SHOPPING.forEach(s=>{ const f=sInfo(s); L.push(`${s[0]}｜${s[1]}`+(f?`｜品牌：${f.b}｜${f.n}｜用途：${f.u}｜在哪買：${f.w}`:"")); });
   L.push(`\n# 食譜（名稱｜作者｜食材標籤｜來源）`);
   RECIPES.forEach(r=>L.push(`${r[2]}｜${r[3]||"-"}｜${r[4]||"-"}｜${SRCNAME[r[0]]}`));
   L.push(`\n# 台灣美食店家（名稱｜地區）`);
@@ -835,9 +835,10 @@ async function send(q){
     chat.busy=false; if(sheet.classList.contains("tall")) openChat();
   }
 }
-document.getElementById("fab").addEventListener("click",openChat);
+const CHAT_URL="https://claude.ai/artifact/Jr3WLYCuRRr53yqfzPEBNz";
+document.getElementById("fab").addEventListener("click",()=>{ if(chat.sample) openChat(); else if(!window.claude) window.open(CHAT_URL,"_blank","noopener"); });
 (async()=>{ try{ chat.sample = window.claude ? await window.claude.use("sample") : null; }catch(e){ chat.sample=null; }
-  if(chat.sample) document.getElementById("fab").hidden=false; })();
+  })();
 
 /* ---------- 匯入自己的收藏（YouTube 登入／IG・FB 資料檔） ---------- */
 const GOOGLE_CLIENT_ID = "718558581182-19nmct9phsq39dq41p4nhj4i4mmhp883.apps.googleusercontent.com";
@@ -1886,7 +1887,7 @@ function receiptLink(v){
 rLoad().then(()=>{ if(state.tab==="more"&&V2.mseg==="rcpt") rerenderKeep(); });
 loadRate();
 
-const BUILD="20261030161131";
+const BUILD="20261030161651";
 (async()=>{ try{ const t=await (await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"})).text(); const b=(t.match(/const BUILD="(\d+)"/)||[])[1]; if(b&&b!==BUILD&&!sessionStorage.getItem("upd_"+b)){ sessionStorage.setItem("upd_"+b,"1"); location.replace(location.pathname+"?v="+b+location.hash); } }catch(e){} })();
 render(); startGPS();
 </script>
