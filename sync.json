@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-10T07:32",
+ "updated": "2026-11-11T12:59",
  "places": [
   {
    "c": "日本拍照景點",
@@ -92,6 +92,38 @@
    "sub": "已儲存",
    "cat": "trip",
    "group": "已儲存"
+  },
+  {
+   "src": "ig",
+   "path": "reel/DfJ3avgzBtc/",
+   "title": "Side quest unlocked: Shibuya",
+   "sub": "日本必逛",
+   "cat": "trip",
+   "group": "日本必逛"
+  },
+  {
+   "src": "ig",
+   "path": "reel/De1x6WUzFb5/",
+   "title": "@styledoor_official",
+   "sub": "日本必逛",
+   "cat": "trip",
+   "group": "日本必逛"
+  },
+  {
+   "src": "ig",
+   "path": "reel/De_4Toth8I6/",
+   "title": "【東京】空間に惹かれる、おすすめスポット5選",
+   "sub": "日本必逛",
+   "cat": "trip",
+   "group": "日本必逛"
+  },
+  {
+   "src": "ig",
+   "path": "reel/DfD4qw4AkaF/",
+   "title": "Visit Japan Web網上辦理海關確認 (出境時攜帶物品確認)手續：",
+   "sub": "日本必逛",
+   "cat": "trip",
+   "group": "日本必逛"
   }
  ],
  "removed": [
