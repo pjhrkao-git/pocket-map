@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-11T12:59",
+ "updated": "2026-11-12T07:32",
  "places": [
   {
    "c": "日本拍照景點",
@@ -10,6 +10,16 @@
    "ig": "https://www.instagram.com/reel/DfBjbM7xVAv/",
    "imp": 1,
    "g": "已儲存"
+  },
+  {
+   "c": "日本必吃",
+   "n": "DEPOT",
+   "t": "丸の内1-9-1",
+   "a": 35.6823156415,
+   "o": 139.7674380315,
+   "ig": "https://www.instagram.com/reel/DfZnr8-Pcb5/",
+   "imp": 1,
+   "g": "日本必吃"
   }
  ],
  "items": [
@@ -121,6 +131,30 @@
    "src": "ig",
    "path": "reel/DfD4qw4AkaF/",
    "title": "Visit Japan Web網上辦理海關確認 (出境時攜帶物品確認)手續：",
+   "sub": "日本必逛",
+   "cat": "trip",
+   "group": "日本必逛"
+  },
+  {
+   "src": "ig",
+   "path": "reel/Dd8pvNJyVRT/",
+   "title": "🇯🇵 更多日本最新資訊 追蹤 @yuna__injp",
+   "sub": "日本必逛",
+   "cat": "trip",
+   "group": "日本必逛"
+  },
+  {
+   "src": "ig",
+   "path": "reel/DfkG78WNOKZ/",
+   "title": "強力推薦一定要買",
+   "sub": "日本必買",
+   "cat": "shop",
+   "group": "日本必買"
+  },
+  {
+   "src": "ig",
+   "path": "reel/DfREo-cpk77/",
+   "title": "不專業開箱 發現好多沒拍到哈哈哈 不過就是簡單介紹啦",
    "sub": "日本必逛",
    "cat": "trip",
    "group": "日本必逛"
